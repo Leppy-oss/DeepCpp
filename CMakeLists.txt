@@ -31,7 +31,7 @@ target_link_libraries(cpp_torch PRIVATE core)
 file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS "tests/*.cpp")
 add_executable(unit_tests ${TEST_SOURCES})
 
-target_link_libraries(unit_tests PRIVATE GTest::gtest_main)
+target_link_libraries(unit_tests PRIVATE core GTest::gtest_main)
 
 include(GoogleTest)
 gtest_discover_tests(unit_tests DISCOVERY_MODE PRE_TEST)
