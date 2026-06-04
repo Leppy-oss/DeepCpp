@@ -3,11 +3,26 @@
 #include <string>
 #include <vector>
 
-Tensor::Tensor(float data) : _data{data}, _shape{}, _stride{} {};
+Tensor::Tensor(float data, bool requires_grad, std::function<void(const std::vector<float> &)> gradfn, std::vector<std::shared_ptr<Tensor>> parents)
+    : _data{data}, _shape{}, _stride{}, _requires_grad(requires_grad), _gradfn(gradfn), _parents(parents)
+{
+    if (_requires_grad)
+    {
+        zero_grad();
+    }
+};
 
-Tensor::Tensor(std::vector<float> data) : _data(data), _shape{data.size()}, _stride{1} {};
+Tensor::Tensor(std::vector<float> data, bool requires_grad, std::function<void(const std::vector<float> &)> gradfn, std::vector<std::shared_ptr<Tensor>> parents)
+    : _data(data), _shape{data.size()}, _stride{1}, _requires_grad(requires_grad), _gradfn(gradfn), _parents(parents)
+{
+    if (_requires_grad)
+    {
+        zero_grad();
+    }
+};
 
-Tensor::Tensor(std::vector<std::vector<float>> data) : _shape{data.size(), data[0].size()}, _stride{data[0].size(), 1}
+Tensor::Tensor(std::vector<std::vector<float>> data, bool requires_grad, std::function<void(const std::vector<float> &)> gradfn, std::vector<std::shared_ptr<Tensor>> parents)
+    : _shape{data.size(), data[0].size()}, _stride{data[0].size(), 1}, _requires_grad(requires_grad), _gradfn(gradfn), _parents(parents)
 {
     std::size_t n_expected_cols = data[0].size();
     for (std::size_t i = 0; i < data.size(); i++)
@@ -21,6 +36,10 @@ Tensor::Tensor(std::vector<std::vector<float>> data) : _shape{data.size(), data[
         {
             _data.push_back(data[i][j]);
         }
+    }
+    if (_requires_grad)
+    {
+        zero_grad();
     }
 }
 
@@ -66,6 +85,29 @@ const float &Tensor::operator()(std::size_t i, std::size_t j) const
 }
 
 float &Tensor::operator()(std::size_t i, std::size_t j) { return const_cast<float &>(static_cast<const Tensor *>(this)->operator()(i, j)); }
+
+bool Tensor::requires_grad() const { return _requires_grad; }
+const std::vector<float> &Tensor::grad() const { return _grad; }
+
+void Tensor::add_to_grad(const std::vector<float> &grad_update)
+{
+    if (!_requires_grad)
+    {
+        return;
+    }
+    if (_grad.size() != grad_update.size())
+    {
+        throw std::runtime_error("Shape mismatch during gradient accumulation");
+    }
+    for (std::size_t i = 0; i < _grad.size(); i++)
+    {
+        _grad[i] += grad_update[i];
+    }
+}
+
+void Tensor::zero_grad() { _grad = std::vector<float>(_data.size()); }
+
+std::size_t Tensor::numel() const { return _data.size(); }
 
 std::ostream &operator<<(std::ostream &os, const Tensor &obj)
 {
@@ -178,7 +220,8 @@ std::shared_ptr<Tensor> operator+(std::shared_ptr<Tensor> t1, std::shared_ptr<Te
         }
         return std::make_shared<Tensor>(result);
     }
-    throw std::invalid_argument("Tensor with " + std::to_string(t1->shape().size()) + " dimensions cannot be added to tensor with " + std::to_string(t2->shape().size()) + " dimensions");
+    throw std::invalid_argument("Tensor with " + std::to_string(t1->shape().size()) + " dimensions cannot be added to tensor with " + std::to_string(t2->shape().size()) +
+                                " dimensions");
 }
 
 std::shared_ptr<Tensor> operator*(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2)
@@ -231,8 +274,8 @@ std::shared_ptr<Tensor> operator*(std::shared_ptr<Tensor> t1, std::shared_ptr<Te
     }
     if (t1->shape()[t1->shape().size() - 1] != t2->shape()[0])
     {
-        throw std::invalid_argument("Last dimension of first tensor (" + std::to_string(t1->shape()[t1->shape().size() - 1]) + ") does not match first dimension of second tensor (" +
-                                    std::to_string(t2->shape()[0]) + ")");
+        throw std::invalid_argument("Last dimension of first tensor (" + std::to_string(t1->shape()[t1->shape().size() - 1]) +
+                                    ") does not match first dimension of second tensor (" + std::to_string(t2->shape()[0]) + ")");
     }
     if (t1->shape().size() == 1 && t2->shape().size() == 1)
     {
