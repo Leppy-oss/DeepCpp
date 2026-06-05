@@ -4,7 +4,7 @@
 
 int main()
 {
-    std::vector<float> v{0.0, 1.0, 2.0, 3.0};
+    std::vector<float> v{0, 1, 2, 3};
     std::shared_ptr<Tensor> t1 = std::make_shared<Tensor>(v);
     std::shared_ptr<Tensor> t2 = std::make_shared<Tensor>(std::vector<std::vector<float>>{v, v, v, v});
 

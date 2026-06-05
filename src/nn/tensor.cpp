@@ -47,7 +47,7 @@ const std::vector<std::size_t> &Tensor::shape() const { return _shape; }
 
 const std::vector<std::size_t> &Tensor::stride() const { return _stride; }
 
-const float &Tensor::item() const
+float Tensor::item() const
 {
     if (_data.size() != 1)
         throw std::runtime_error("item() can only be called on tensors with a single element");
@@ -55,9 +55,15 @@ const float &Tensor::item() const
     return _data[0];
 }
 
-float &Tensor::item() { return const_cast<float &>(static_cast<const Tensor *>(this)->item()); }
+float &Tensor::item()
+{
+    if (_data.size() != 1)
+        throw std::runtime_error("item() can only be called on tensors with a single element");
 
-const float &Tensor::operator()(std::size_t i) const
+    return _data[0];
+}
+
+float Tensor::operator()(std::size_t i) const
 {
     if (_shape.size() == 0)
         throw std::invalid_argument("Cannot index into scalar value, please use item() instead");
@@ -70,9 +76,20 @@ const float &Tensor::operator()(std::size_t i) const
     return _data[i];
 }
 
-float &Tensor::operator()(std::size_t i) { return const_cast<float &>(static_cast<const Tensor *>(this)->operator()(i)); }
+float &Tensor::operator()(std::size_t i)
+{
+    if (_shape.size() == 0)
+        throw std::invalid_argument("Cannot index into scalar value, please use item() instead");
+    if (_shape.size() != 1)
+        throw std::invalid_argument("Dimensional mismatch between single index and non-1d tensor");
+    if (i >= _shape[0])
+    {
+        throw std::invalid_argument("Index " + std::to_string(i) + " out of bounds for array of size " + std::to_string(_shape[0]));
+    }
+    return _data[i];
+}
 
-const float &Tensor::operator()(std::size_t i, std::size_t j) const
+float Tensor::operator()(std::size_t i, std::size_t j) const
 {
     if (_shape.size() != 2)
         throw std::invalid_argument("Dimensional mismatch between double index and non-2d tensor");
@@ -84,7 +101,17 @@ const float &Tensor::operator()(std::size_t i, std::size_t j) const
     return _data[i * _stride[0] + j * _stride[1]];
 }
 
-float &Tensor::operator()(std::size_t i, std::size_t j) { return const_cast<float &>(static_cast<const Tensor *>(this)->operator()(i, j)); }
+float &Tensor::operator()(std::size_t i, std::size_t j)
+{
+    if (_shape.size() != 2)
+        throw std::invalid_argument("Dimensional mismatch between double index and non-2d tensor");
+    if (i >= _shape[0])
+        throw std::invalid_argument("Row index " + std::to_string(i) + " out of bounds for tensor with " + std::to_string(_shape[0]) + " rows");
+    if (j >= _shape[1])
+        throw std::invalid_argument("Col index " + std::to_string(j) + " out of bounds for tensor with " + std::to_string(_shape[1]) + " cols");
+
+    return _data[i * _stride[0] + j * _stride[1]];
+}
 
 bool Tensor::requires_grad() const { return _requires_grad; }
 const std::vector<float> &Tensor::grad() const { return _grad; }
