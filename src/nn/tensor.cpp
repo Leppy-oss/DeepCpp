@@ -169,11 +169,22 @@ std::ostream &operator<<(std::ostream &os, const Tensor &obj)
     return os;
 }
 
+Tensor::~Tensor() { std::cout << "[Destructor] Tensor destroyed at " << this << std::endl; }
+
 std::shared_ptr<Tensor> operator+(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2)
 {
     if (t1->shape().size() == 0 && t2->shape().size() == 0)
     {
         float result = t1->item() + t2->item();
+        if (t1->requires_grad() || t2->requires_grad())
+        {
+            std::vector<std::shared_ptr<Tensor>> parents{t1, t2};
+            std::function<void(const std::vector<float> &)> gradfn = [t1, t2](const std::vector<float> &grad_output)
+            {
+                t1->add_to_grad({grad_output[0]});
+                t2->add_to_grad({grad_output[0]});
+            };
+        }
         return std::make_shared<Tensor>(result);
     }
     if (t1->shape().size() == 0 && t2->shape().size() == 1)

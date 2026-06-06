@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-class Tensor
+class Tensor : public std::enable_shared_from_this<Tensor>
 {
 private:
     std::vector<float> _data;
@@ -17,11 +17,12 @@ private:
     bool _requires_grad;
 
 public:
-    Tensor(float data, bool requires_grad = false, std::function<void(const std::vector<float> &)> gradfn = nullptr, std::vector<std::shared_ptr<Tensor>> parents = {});
-    Tensor(std::vector<float> data, bool requires_grad = false, std::function<void(const std::vector<float> &)> gradfn = nullptr,
-           std::vector<std::shared_ptr<Tensor>> parents = {});
-    Tensor(std::vector<std::vector<float>> data, bool requires_grad = false, std::function<void(const std::vector<float> &)> gradfn = nullptr,
-           std::vector<std::shared_ptr<Tensor>> parents = {});
+    explicit Tensor(float data, bool requires_grad = false, std::function<void(const std::vector<float> &)> gradfn = nullptr, std::vector<std::shared_ptr<Tensor>> parents = {});
+    explicit Tensor(std::vector<float> data, bool requires_grad = false, std::function<void(const std::vector<float> &)> gradfn = nullptr,
+                    std::vector<std::shared_ptr<Tensor>> parents = {});
+    explicit Tensor(std::vector<std::vector<float>> data, bool requires_grad = false, std::function<void(const std::vector<float> &)> gradfn = nullptr,
+                    std::vector<std::shared_ptr<Tensor>> parents = {});
+    ~Tensor();
 
     float item() const;
     float &item();

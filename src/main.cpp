@@ -4,17 +4,17 @@
 
 int main()
 {
-    std::vector<float> v{0, 1, 2, 3};
-    std::shared_ptr<Tensor> t1 = std::make_shared<Tensor>(v);
-    std::shared_ptr<Tensor> t2 = std::make_shared<Tensor>(std::vector<std::vector<float>>{v, v, v, v});
+    auto weights = std::make_shared<Tensor>(2.0f, true);
+    std::cout << "Memory leak test begin" << std::endl;
+    {
+        auto inputs = std::make_shared<Tensor>(3.0f);
 
-    std::shared_ptr<Tensor> t2p = std::make_shared<Tensor>(*t2);
+        auto loss = weights + inputs;
 
-    std::cout << *t1 << std::endl;
-    std::cout << *t2 << std::endl;
-    std::cout << *(t1 + std::make_shared<Tensor>(5.0)) << std::endl;
-    std::cout << (*(t2 + t2p))(5) << std::endl;
-    std::cout << (*(t1 * t1)).item() << std::endl;
+        std::cout << "Exit block scope" << std::endl;
+    }
+
+    std::cout << "Memory leak test end" << std::endl;
 
     return 0;
 }
