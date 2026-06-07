@@ -176,16 +176,19 @@ std::shared_ptr<Tensor> operator+(std::shared_ptr<Tensor> t1, std::shared_ptr<Te
     if (t1->shape().size() == 0 && t2->shape().size() == 0)
     {
         float result = t1->item() + t2->item();
-        if (t1->requires_grad() || t2->requires_grad())
+        std::vector<std::shared_ptr<Tensor>> parents{t1, t2};
+        auto gradfn = [t1, t2](const std::vector<float> &grad_output)
         {
-            std::vector<std::shared_ptr<Tensor>> parents{t1, t2};
-            std::function<void(const std::vector<float> &)> gradfn = [t1, t2](const std::vector<float> &grad_output)
+            if (t1->requires_grad())
             {
                 t1->add_to_grad({grad_output[0]});
+            }
+            if (t2->requires_grad())
+            {
                 t2->add_to_grad({grad_output[0]});
-            };
-        }
-        return std::make_shared<Tensor>(result);
+            }
+        };
+        return std::make_shared<Tensor>(result, t1->requires_grad() || t2->requires_grad(), gradfn, parents);
     }
     if (t1->shape().size() == 0 && t2->shape().size() == 1)
     {
@@ -194,7 +197,24 @@ std::shared_ptr<Tensor> operator+(std::shared_ptr<Tensor> t1, std::shared_ptr<Te
         {
             result.push_back(t1->item() + ((*t2)(i)));
         }
-        return std::make_shared<Tensor>(result);
+        std::vector<std::shared_ptr<Tensor>> parents{t1, t2};
+        auto gradfn = [t1, t2](const std::vector<float> &grad_output)
+        {
+            if (t1->requires_grad())
+            {
+                float t1_grad = 0.0f;
+                for (std::size_t i = 0; i < grad_output.size(); i++)
+                {
+                    t1_grad += grad_output[i];
+                }
+                t1->add_to_grad({t1_grad});
+            }
+            if (t2->requires_grad())
+            {
+                t2->add_to_grad(grad_output);
+            }
+        };
+        return std::make_shared<Tensor>(result, t1->requires_grad() || t2->requires_grad(), gradfn, parents);
     }
     if (t1->shape().size() == 0 && t2->shape().size() == 2)
     {
