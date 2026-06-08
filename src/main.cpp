@@ -1,11 +1,12 @@
-#include "nn/tensor.h"
 #include <iostream>
+#include <nn/tensor.h>
+#include <utils.h>
 #include <vector>
 
 int main()
 {
     auto t1 = std::make_shared<Tensor>(5.0f);
-    auto t2 = std::make_shared<Tensor>(std::vector<float>{1.0f, 1.0f, 1.0f});
+    auto t2 = std::make_shared<Tensor>(std::vector<float>{1.0f, 2.0f, 3.0f});
     auto t3 = std::make_shared<Tensor>(
         std::vector<std::vector<float>>{{1.0f, 1.0f, 1.0f}, {2.0f, 2.0f, 2.0f}, {3.0f, 3.0f, 3.0f}}
     );

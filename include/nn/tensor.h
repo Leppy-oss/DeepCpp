@@ -5,6 +5,21 @@
 #include <string>
 #include <vector>
 
+namespace tensor
+{
+    std::vector<std::size_t> make_stride(const std::vector<std::size_t> &shape);
+    std::size_t numel_shape(const std::vector<std::size_t> shape);
+    std::vector<std::size_t> broadcast_shape(const std::vector<std::size_t> &a, const std::vector<std::size_t> &b);
+
+    std::size_t inv_broadcast_idx(
+        std::size_t out_idx,
+        const std::vector<std::size_t> &out_shape,
+        const std::vector<std::size_t> &in_shape,
+        const std::vector<std::size_t> &in_stride,
+        std::size_t in_offset
+    );
+}
+
 class Tensor : public std::enable_shared_from_this<Tensor>
 {
 private:
@@ -42,6 +57,14 @@ public:
     );
 
     explicit Tensor(
+        std::vector<float> data,
+        std::vector<std::size_t> shape,
+        bool requires_grad = false,
+        std::function<void(const std::vector<float> &)> gradfn = nullptr,
+        std::vector<std::shared_ptr<Tensor>> parents = {}
+    );
+
+    explicit Tensor(
         std::shared_ptr<std::vector<float>> storage,
         std::vector<std::size_t> shape,
         std::vector<std::size_t> stride,
@@ -50,6 +73,10 @@ public:
         std::function<void(const std::vector<float> &)> gradfn = nullptr,
         std::vector<std::shared_ptr<Tensor>> parents = {}
     );
+
+    std::shared_ptr<std::vector<float>> storage() const;
+    float storage(std::size_t idx) const;
+    float &storage(std::size_t idx);
 
     float item() const;
     float &item();
@@ -74,6 +101,10 @@ public:
     const std::vector<std::size_t> &shape() const;
     const std::vector<std::size_t> &stride() const;
 
+    std::size_t idx_at_flat(std::size_t flat) const;
+    float at(std::size_t idx) const;
+    float &at(std::size_t idx);
+
     std::size_t offset() const;
     std::size_t numel() const;
     std::size_t ndim() const;
@@ -84,7 +115,20 @@ public:
     void zero_grad();
     void add_to_grad(const std::vector<float> &grad_update);
 
+    std::shared_ptr<Tensor> broadcast(const std::vector<std::size_t> &target_shape) const;
+
+    friend std::shared_ptr<Tensor> bin_elementwise(
+        std::shared_ptr<Tensor> t1,
+        std::shared_ptr<Tensor> t2,
+        std::function<float(float, float)> fwd_op,
+        std::function<float(float, float, float)> grad_t1,
+        std::function<float(float, float, float)> grad_t2
+    );
+
     friend std::ostream &operator<<(std::ostream &os, const Tensor &obj);
     friend std::shared_ptr<Tensor> operator+(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2);
     friend std::shared_ptr<Tensor> operator*(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2);
+
+    friend std::shared_ptr<Tensor> matmul(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2);
+    std::shared_ptr<Tensor> matmul(std::shared_ptr<Tensor> other);
 };
