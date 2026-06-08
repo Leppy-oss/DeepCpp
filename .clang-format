@@ -3,9 +3,21 @@ IndentWidth: 4
 TabWidth: 4
 UseTab: Never
 BreakBeforeBraces: Allman
-AllowShortIfStatementsOnASingleLine: false
 IndentCaseLabels: false
-ColumnLimit: 180
+ColumnLimit: 120
 AccessModifierOffset: -4
 NamespaceIndentation: All
 FixNamespaceComments: false
+
+AlignAfterOpenBracket: BlockIndent
+BinPackParameters: false
+BinPackArguments: false
+
+ConstructorInitializerIndentWidth: 4
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+AllowAllConstructorInitializersOnNextLine: false
+BreakConstructorInitializers: AfterColon
+
+AllowShortBlocksOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: false
+InsertBraces: true
