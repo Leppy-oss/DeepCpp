@@ -18,36 +18,57 @@ private:
     std::vector<std::shared_ptr<Tensor>> parents_;
     bool requires_grad_;
 
-    std::size_t flat_idx(const std::vector<std::size_t> idx) const;
+    std::size_t flat_idx(const std::vector<std::size_t> &idx) const;
+    std::ostream &printf(std::ostream &os, std::size_t dim, std::vector<std::size_t> &idx) const;
 
 public:
-    explicit Tensor(float data, bool requires_grad = false, std::function<void(const std::vector<float> &)> gradfn = nullptr, std::vector<std::shared_ptr<Tensor>> parents = {});
-    explicit Tensor(std::vector<float> data, bool requires_grad = false, std::function<void(const std::vector<float> &)> gradfn = nullptr,
-                    std::vector<std::shared_ptr<Tensor>> parents = {});
-    explicit Tensor(std::vector<std::vector<float>> data, bool requires_grad = false, std::function<void(const std::vector<float> &)> gradfn = nullptr,
-                    std::vector<std::shared_ptr<Tensor>> parents = {});
+    explicit Tensor(
+        float data,
+        bool requires_grad = false,
+        std::function<void(const std::vector<float> &)> gradfn = nullptr,
+        std::vector<std::shared_ptr<Tensor>> parents = {}
+    );
+    explicit Tensor(
+        std::vector<float> data,
+        bool requires_grad = false,
+        std::function<void(const std::vector<float> &)> gradfn = nullptr,
+        std::vector<std::shared_ptr<Tensor>> parents = {}
+    );
+    explicit Tensor(
+        std::vector<std::vector<float>> data,
+        bool requires_grad = false,
+        std::function<void(const std::vector<float> &)> gradfn = nullptr,
+        std::vector<std::shared_ptr<Tensor>> parents = {}
+    );
 
-    explicit Tensor(std::shared_ptr<std::vector<float>> storage, std::vector<std::size_t> shape, std::vector<std::size_t> stride, std::size_t offset = 0,
-                    bool requires_grad = false, std::function<void(const std::vector<float> &)> gradfn = nullptr, std::vector<std::shared_ptr<Tensor>> parents = {});
+    explicit Tensor(
+        std::shared_ptr<std::vector<float>> storage,
+        std::vector<std::size_t> shape,
+        std::vector<std::size_t> stride,
+        std::size_t offset = 0,
+        bool requires_grad = false,
+        std::function<void(const std::vector<float> &)> gradfn = nullptr,
+        std::vector<std::shared_ptr<Tensor>> parents = {}
+    );
 
     float item() const;
     float &item();
 
-    float operator()(std::vector<std::size_t> idx) const;
-    float &operator()(std::vector<std::size_t> idx);
+    float operator()(const std::vector<std::size_t> &idx) const;
+    float &operator()(const std::vector<std::size_t> &idx);
 
     template <typename... Args>
         requires(std::convertible_to<Args, std::size_t> && ...)
     float operator()(Args... idx) const
     {
-        return operator()({std::static_cast<std::size_t>(idx)...});
+        return operator()({static_cast<std::size_t>(idx)...});
     }
 
     template <typename... Args>
         requires(std::convertible_to<Args, std::size_t> && ...)
     float &operator()(Args... idx)
     {
-        return operator()({std::static_cast < std::size_t(idx)...});
+        return operator()({static_cast<std::size_t>(idx)...});
     };
 
     const std::vector<std::size_t> &shape() const;

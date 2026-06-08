@@ -3,6 +3,31 @@
 #include <string>
 #include <vector>
 
+namespace
+{
+    std::vector<std::size_t> make_stride(const std::vector<std::size_t> &shape)
+    {
+        std::vector<std::size_t> stride(shape.size());
+        std::size_t s = 1;
+        for (int i = static_cast<int>(shape.size()); i >= 0; i--)
+        {
+            stride[i] = s;
+            s *= shape[i];
+        }
+        return stride;
+    }
+
+    std::size_t numel_shape(const std::vector<std::size_t> shape)
+    {
+        std::size_t numel = 1;
+        for (std::size_t dim : shape)
+        {
+            numel *= dim;
+        }
+        return numel;
+    }
+}
+
 Tensor::Tensor(
     float data,
     bool requires_grad,
@@ -65,10 +90,10 @@ Tensor::Tensor(
             if (row.size() != n_expected_cols)
             {
                 throw std::invalid_argument("Inconsistent dimensions");
-                for (float d : row)
-                {
-                    storage_->push_back(d);
-                }
+            }
+            for (float d : row)
+            {
+                storage_->push_back(d);
             }
         }
     }
@@ -107,107 +132,48 @@ Tensor::Tensor(
 
 float Tensor::item() const
 {
-    if (storage_->size() != 1)
+    if (numel() != 1)
     {
         throw std::runtime_error("item() can only be called on tensors with a single element");
     }
-
     return (*storage_)[0];
 }
 
 float &Tensor::item()
 {
-    if (storage_->size() != 1)
+    if (numel() != 1)
     {
         throw std::runtime_error("item() can only be called on tensors with a single element");
     }
-
     return (*storage_)[0];
 }
 
-float &Tensor::operator()(std::vector<std::size_t> idx) { return (*storage_)[flat_idx(idx)]; }
-
-float Tensor::operator()(std::size_t i) const
+std::size_t Tensor::flat_idx(const std::vector<std::size_t> &idx) const
 {
-    if (shape_.size() == 0)
-    {
-        throw std::invalid_argument("Cannot index into scalar value, please use item() instead");
-    }
-    if (shape_.size() != 1)
-    {
-        throw std::invalid_argument("Dimensional mismatch between single index and non-1d tensor");
-    }
-    if (i >= shape_[0])
+    if (idx.size() != ndim())
     {
         throw std::invalid_argument(
-            "Index " + std::to_string(i) + " out of bounds for array of size " + std::to_string(shape_[0])
+            "Cannot access index with " + std::to_string(idx.size()) + " dimensions for tensor with " +
+            std::to_string(ndim()) + " dimensions"
         );
     }
-    return storage_[i];
+    std::size_t flattened_idx = offset_;
+    for (std::size_t dim = 0; dim < idx.size(); dim++)
+    {
+        if (idx[dim] >= shape_[dim])
+        {
+            throw std::out_of_range(
+                "Index " + std::to_string(idx[dim]) + " out of bounds on dimension " + std::to_string(dim) +
+                " (max value " + std::to_string(shape_[dim]) + ")"
+            );
+        }
+        flattened_idx += idx[dim] * stride_[dim];
+    }
+    return flattened_idx;
 }
 
-float &Tensor::operator()(std::size_t i)
-{
-    if (shape_.size() == 0)
-    {
-        throw std::invalid_argument("Cannot index into scalar value, please use item() instead");
-    }
-    if (shape_.size() != 1)
-    {
-        throw std::invalid_argument("Dimensional mismatch between single index and non-1d tensor");
-    }
-    if (i >= shape_[0])
-    {
-        throw std::invalid_argument(
-            "Index " + std::to_string(i) + " out of bounds for array of size " + std::to_string(shape_[0])
-        );
-    }
-    return storage_[i];
-}
-
-float Tensor::operator()(std::size_t i, std::size_t j) const
-{
-    if (shape_.size() != 2)
-    {
-        throw std::invalid_argument("Dimensional mismatch between double index and non-2d tensor");
-    }
-    if (i >= shape_[0])
-    {
-        throw std::invalid_argument(
-            "Row index " + std::to_string(i) + " out of bounds for tensor with " + std::to_string(shape_[0]) + " rows"
-        );
-    }
-    if (j >= shape_[1])
-    {
-        throw std::invalid_argument(
-            "Col index " + std::to_string(j) + " out of bounds for tensor with " + std::to_string(shape_[1]) + " cols"
-        );
-    }
-
-    return storage_[i * stride_[0] + j * stride_[1]];
-}
-
-float &Tensor::operator()(std::size_t i, std::size_t j)
-{
-    if (shape_.size() != 2)
-    {
-        throw std::invalid_argument("Dimensional mismatch between double index and non-2d tensor");
-    }
-    if (i >= shape_[0])
-    {
-        throw std::invalid_argument(
-            "Row index " + std::to_string(i) + " out of bounds for tensor with " + std::to_string(shape_[0]) + " rows"
-        );
-    }
-    if (j >= shape_[1])
-    {
-        throw std::invalid_argument(
-            "Col index " + std::to_string(j) + " out of bounds for tensor with " + std::to_string(shape_[1]) + " cols"
-        );
-    }
-
-    return storage_[i * stride_[0] + j * stride_[1]];
-}
+float Tensor::operator()(const std::vector<std::size_t> &idx) const { return (*storage_)[flat_idx(idx)]; }
+float &Tensor::operator()(const std::vector<std::size_t> &idx) { return (*storage_)[flat_idx(idx)]; }
 
 const std::vector<std::size_t> &Tensor::shape() const { return shape_; }
 const std::vector<std::size_t> &Tensor::stride() const { return stride_; }
@@ -228,7 +194,10 @@ void Tensor::add_to_grad(const std::vector<float> &grad_update)
     }
     if (grad_.size() != grad_update.size())
     {
-        throw std::runtime_error("Shape mismatch during gradient accumulation");
+        throw std::runtime_error(
+            "Shape mismatch during gradient accumulation (" + std::to_string(grad_.size()) + " vs " +
+            std::to_string(grad_update.size()) + ")"
+        );
     }
     for (std::size_t i = 0; i < grad_.size(); i++)
     {
@@ -236,42 +205,53 @@ void Tensor::add_to_grad(const std::vector<float> &grad_update)
     }
 }
 
+std::ostream &Tensor::printf(std::ostream &os, std::size_t dim, std::vector<std::size_t> &idx) const
+{
+    os << "[";
+    for (std::size_t i = 0; i < shape_[dim]; i++)
+    {
+        idx[dim] = i;
+        if (dim >= ndim() - 1)
+        {
+            os << operator()(idx);
+        }
+        else
+        {
+            printf(os, dim + 1, idx);
+        }
+        if (i < shape_[dim] - 1)
+        {
+            if (dim >= ndim() - 1)
+            {
+                os << ", ";
+            }
+            else
+            {
+                os << ",\n       ";
+                for (std::size_t j = 0; j <= dim; j++)
+                {
+                    os << " ";
+                }
+            }
+        }
+    }
+    os << "]";
+    return os;
+}
+
 std::ostream &operator<<(std::ostream &os, const Tensor &obj)
 {
-    std::string repr = "tensor(";
+    os << "tensor(";
     if (obj.shape().size() == 0)
     {
-        repr += std::to_string(obj.item());
-    }
-    else if (obj.shape().size() == 1)
-    {
-        for (std::size_t i = 0; i < obj.shape()[0] - 1; i++)
-        {
-            repr += std::to_string(obj(i)) + ", ";
-        }
-        if (obj.shape()[0] > 0)
-        {
-            repr += std::to_string(obj(obj.shape()[0] - 1));
-        }
+        os << obj.item();
     }
     else
     {
-        repr += "\n";
-        for (std::size_t i = 0; i < obj.shape()[0]; i++)
-        {
-            repr += "(";
-            for (std::size_t j = 0; j < obj.shape()[1] - 1; j++)
-            {
-                repr += std::to_string(obj(i, j)) + ", ";
-            }
-            if (obj.shape()[1] > 0)
-            {
-                repr += std::to_string(obj(i, obj.shape()[1] - 1)) + ")\n";
-            }
-        }
+        auto idx = std::vector<std::size_t>(obj.shape().size());
+        obj.printf(os, 0, idx);
     }
-    repr += ")";
-    os << repr;
+    os << ")";
     return os;
 }
 
