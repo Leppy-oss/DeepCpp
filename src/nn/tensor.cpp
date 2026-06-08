@@ -9,7 +9,7 @@ namespace
     {
         std::vector<std::size_t> stride(shape.size());
         std::size_t s = 1;
-        for (int i = static_cast<int>(shape.size()); i >= 0; i--)
+        for (int i = static_cast<int>(shape.size()) - 1; i >= 0; i--)
         {
             stride[i] = s;
             s *= shape[i];
@@ -179,7 +179,7 @@ const std::vector<std::size_t> &Tensor::shape() const { return shape_; }
 const std::vector<std::size_t> &Tensor::stride() const { return stride_; }
 
 std::size_t Tensor::offset() const { return offset_; }
-std::size_t Tensor::numel() const { return storage_->size(); }
+std::size_t Tensor::numel() const { return numel_shape(shape_); }
 std::size_t Tensor::ndim() const { return shape_.size(); }
 
 bool Tensor::requires_grad() const { return requires_grad_; }
