@@ -28,12 +28,13 @@ TEST(TensorTest, Multiplication)
     std::shared_ptr<Tensor> v1 = std::make_shared<Tensor>(std::vector<float>{1.0f, 2.0f, 3.0f, 4.0f});
     std::shared_ptr<Tensor> v2 = std::make_shared<Tensor>(std::vector<float>{5.0f, 10.0f});
     std::shared_ptr<Tensor> v3 = s1 * v1;
-    std::shared_ptr<Tensor> v4 = v1 * v1;
+    std::shared_ptr<Tensor> v4 = v1->mm(v1);
 
-    std::shared_ptr<Tensor> m1 =
-        std::make_shared<Tensor>(std::vector<std::vector<float>>{{1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 1.0f}});
-    std::shared_ptr<Tensor> m2 = m1 * m1;
-    std::shared_ptr<Tensor> m3 = v1 * m1;
+    std::shared_ptr<Tensor> m1 = std::make_shared<Tensor>(std::vector<std::vector<float>>{
+        {1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 1.0f}
+    });
+    std::shared_ptr<Tensor> m2 = m1->mm(m1);
+    std::shared_ptr<Tensor> m3 = v1->mm(m1);
 
     EXPECT_EQ((s1 * s2)->item(), 2.5f);
     EXPECT_EQ((*v3)(2), 1.5f);

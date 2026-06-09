@@ -120,7 +120,7 @@ public:
     std::shared_ptr<Tensor> grad() const;
 
     void zero_grad();
-    void add_to_grad(std::shared_ptr<Tensor> grad_update);
+    void add_grad(std::shared_ptr<Tensor> grad_update);
 
     std::shared_ptr<Tensor> broadcast(const std::vector<std::size_t> &target_shape) const;
 

@@ -324,11 +324,15 @@ void Tensor::zero_grad()
     }
     grad_ = Tensor::zeros(shape_);
 }
-void Tensor::add_to_grad(std::shared_ptr<Tensor> grad_update)
+void Tensor::add_grad(std::shared_ptr<Tensor> grad_update)
 {
     if (!requires_grad_)
     {
         return;
+    }
+    if (!grad_)
+    {
+        throw std::runtime_error("grad_ does not exist yet");
     }
     if (grad_->numel() != grad_update->numel())
     {
@@ -336,10 +340,6 @@ void Tensor::add_to_grad(std::shared_ptr<Tensor> grad_update)
             "Shape mismatch during gradient accumulation (" + std::to_string(grad_->numel()) + " vs " +
             std::to_string(grad_update->numel()) + ")"
         );
-    }
-    if (!grad_)
-    {
-        throw std::runtime_error("grad_ does not exist yet");
     }
     for (std::size_t i = 0; i < grad_->numel(); i++)
     {
@@ -429,15 +429,15 @@ std::shared_ptr<Tensor> Tensor::broadcast(const std::vector<std::size_t> &target
         auto in_stride = tensor::make_stride(shape_);
         parents = {self};
 
-        gradfn = [self, in_shape, out_shape, in_stride](std::shared_ptr<Tensor> grad_output)
+        gradfn = [self, in_shape, out_shape, in_stride](std::shared_ptr<Tensor> grad_prev)
         {
             auto grad_update = Tensor::zeros(self->shape());
-            for (std::size_t out_idx = 0; out_idx < grad_output->numel(); out_idx++)
+            for (std::size_t grad_idx = 0; grad_idx < grad_prev->numel(); grad_idx++)
             {
-                std::size_t in_idx = tensor::inv_broadcast_idx(out_idx, out_shape, in_shape, in_stride, 0);
-                grad_update->at(in_idx) += grad_output->at(out_idx);
+                std::size_t ten_idx = tensor::inv_broadcast_idx(grad_idx, out_shape, in_shape, in_stride, 0);
+                grad_update->at(ten_idx) += grad_prev->at(grad_idx);
             }
-            self->add_to_grad(grad_update);
+            self->add_grad(grad_update);
         };
     }
 
@@ -448,8 +448,8 @@ std::shared_ptr<Tensor> bin_elementwise(
     std::shared_ptr<Tensor> t1,
     std::shared_ptr<Tensor> t2,
     std::function<float(float, float)> fwd_op,
-    std::function<float(float, float, float)> grad_t1,
-    std::function<float(float, float, float)> grad_t2
+    std::function<float(float, float, float)> gradfn_t1,
+    std::function<float(float, float, float)> gradfn_t2
 )
 {
     auto out_shape = tensor::broadcast_shape(t1->shape(), t2->shape());
@@ -473,25 +473,31 @@ std::shared_ptr<Tensor> bin_elementwise(
     if (requires_grad)
     {
         parents = {b1, b2};
-        gradfn = [b1, b2, grad_t1, grad_t2](std::shared_ptr<Tensor> grad_output)
+        gradfn = [b1, b2, gradfn_t1, gradfn_t2](std::shared_ptr<Tensor> grad_prev)
         {
-            auto grad_b1 = Tensor::zeros(grad_output->shape());
-            auto grad_b2 = Tensor::zeros(grad_output->shape());
+            auto g1 = Tensor::zeros(grad_prev->shape());
+            auto g2 = Tensor::zeros(grad_prev->shape());
 
-            for (std::size_t idx = 0; idx < grad_output->numel(); idx++)
+            for (std::size_t idx = 0; idx < grad_prev->numel(); idx++)
             {
-                grad_b1->at(idx) = grad_t1(b1->at(idx), b2->at(idx), grad_output->at(idx));
-                grad_b2->at(idx) = grad_t2(b2->at(idx), b2->at(idx), grad_output->at(idx));
+                if (b1->requires_grad())
+                {
+                    g1->at(idx) = gradfn_t1(b1->at(idx), b2->at(idx), grad_prev->at(idx));
+                }
+                if (b2->requires_grad())
+                {
+                    g2->at(idx) = gradfn_t2(b1->at(idx), b2->at(idx), grad_prev->at(idx));
+                }
             }
 
             if (b1->requires_grad())
             {
-                b1->add_to_grad(grad_b1);
+                b1->add_grad(g1);
             }
 
             if (b2->requires_grad())
             {
-                b2->add_to_grad(grad_b2);
+                b2->add_grad(g2);
             }
         };
     }
@@ -556,7 +562,7 @@ std::shared_ptr<Tensor> mm(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t
     if (t1_vec)
     {
         t1_shape.insert(t1_shape.begin(), 1);
-        t1_stride.insert(t1_shape.begin(), 0);
+        t1_stride.insert(t1_stride.begin(), 0);
     }
     if (t2_vec)
     {
@@ -606,24 +612,22 @@ std::shared_ptr<Tensor> mm(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t
     for (std::size_t batch_idx = 0; batch_idx < num_batches; batch_idx++)
     {
         std::size_t t1_batch_idx =
-            t1->offset() + tensor::inv_broadcast_idx(batch_idx, batch_shape, t1_batch_shape, t1_batch_stride, 0);
+            tensor::inv_broadcast_idx(batch_idx, batch_shape, t1_batch_shape, t1_batch_stride, t1->offset());
         std::size_t t2_batch_idx =
-            t2->offset() + tensor::inv_broadcast_idx(batch_idx, batch_shape, t2_batch_shape, t2_batch_stride, 0);
+            tensor::inv_broadcast_idx(batch_idx, batch_shape, t2_batch_shape, t2_batch_stride, t2->offset());
 
         for (std::size_t i = 0; i < M; i++)
         {
             for (std::size_t j = 0; j < K; j++)
             {
                 float dot_product = 0.0f;
-                for (std::size_t n = 0; n < N1; n++)
+                for (std::size_t k = 0; k < N1; k++)
                 {
-                    dot_product +=
-                        t1->storage(
-                            t1_batch_idx + i * t1_stride[t1_stride.size() - 2] + n * t1_stride[t1_stride.size() - 1]
-                        ) *
-                        t2->storage(
-                            t2_batch_idx + j * t2_stride[t2_stride.size() - 1] + n * t2_stride[t2_stride.size() - 2]
-                        );
+                    std::size_t t1_ik =
+                        t1_batch_idx + i * t1_stride[t1_stride.size() - 2] + k * t1_stride[t1_stride.size() - 1];
+                    std::size_t t2_kj =
+                        t2_batch_idx + k * t2_stride[t2_stride.size() - 2] + j * t2_stride[t2_stride.size() - 1];
+                    dot_product += t1->storage(t1_ik) * t2->storage(t2_kj);
                 }
                 output_data.push_back(dot_product);
             }
@@ -637,24 +641,62 @@ std::shared_ptr<Tensor> mm(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t
     if (requires_grad)
     {
         parents = {t1, t2};
-        gradfn = [=](std::shared_ptr<Tensor> grad_output)
-        {
-            auto grad_t1 = Tensor::zeros(t1->shape());
-            auto grad_t2 = Tensor::zeros(t2->shape());
 
-            auto t1_batch_logical_stride = tensor::make_stride(t1_batch_shape);
-            auto t2_batch_logical_stride = tensor::make_stride(t2_batch_shape);
+        auto g1_batch_stride = tensor::make_stride(t1_batch_shape);
+        auto g2_batch_stride = tensor::make_stride(t2_batch_shape);
+
+        gradfn = [=](std::shared_ptr<Tensor> grad_prev)
+        {
+            auto g1 = Tensor::zeros(t1->shape());
+            auto g2 = Tensor::zeros(t2->shape());
 
             for (std::size_t batch_idx = 0; batch_idx < num_batches; batch_idx++)
             {
                 std::size_t t1_batch_idx =
-                    t1->offset() +
-                    tensor::inv_broadcast_idx(batch_idx, batch_shape, t1_batch_shape, t1_batch_logical_stride, 0);
+                    tensor::inv_broadcast_idx(batch_idx, batch_shape, t1_batch_shape, t1_batch_stride, t1->offset());
                 std::size_t t2_batch_idx =
-                    t2->offset() +
-                    tensor::inv_broadcast_idx(batch_idx, batch_shape, t2_batch_shape, t2_batch_logical_stride, 0);
+                    tensor::inv_broadcast_idx(batch_idx, batch_shape, t2_batch_shape, t2_batch_stride, t2->offset());
+                std::size_t g1_batch_idx =
+                    tensor::inv_broadcast_idx(batch_idx, batch_shape, t1_batch_shape, g1_batch_stride, 0);
+                std::size_t g2_batch_idx =
+                    tensor::inv_broadcast_idx(batch_idx, batch_shape, t2_batch_shape, g2_batch_stride, 0);
 
-                std::size_t
+                for (std::size_t i = 0; i < M; i++)
+                {
+                    for (std::size_t j = 0; j < K; j++)
+                    {
+                        float dy_ij = grad_prev->at(batch_idx * M * K + i * K + j);
+
+                        for (std::size_t k = 0; k < N1; k++)
+                        {
+                            std::size_t t1_ik = t1_batch_idx + i * t1_stride[t1_stride.size() - 2] +
+                                                k * t1_stride[t1_stride.size() - 1];
+                            std::size_t t2_kj = t2_batch_idx + k * t2_stride[t2_stride.size() - 2] +
+                                                j * t2_stride[t2_stride.size() - 1];
+
+                            if (t1->requires_grad())
+                            {
+                                std::size_t g1_ik = t1_vec ? k : g1_batch_idx * M * N1 + i * N1 + k;
+                                g1->at(g1_ik) += dy_ij * t2->storage(t2_kj);
+                            }
+
+                            if (t2->requires_grad())
+                            {
+                                std::size_t g2_kj = t2_vec ? k : g2_batch_idx * N1 * K + k * K + j;
+                                g2->at(g2_kj) += dy_ij * t1->storage(t1_ik);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (t1->requires_grad())
+            {
+                t1->add_grad(g1);
+            }
+            if (t2->requires_grad())
+            {
+                t2->add_grad(g2);
             }
         };
     }

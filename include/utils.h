@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -20,4 +21,10 @@ namespace utils
         ostr << ")";
         return ostr.str();
     }
+}
+
+template <typename T> std::ostream &operator<<(std::ostream &os, const std::vector<T> &obj)
+{
+    os << utils::to_string(obj);
+    return os;
 }
