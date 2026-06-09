@@ -16,25 +16,25 @@ TEST(TensorTest, Construction)
     EXPECT_EQ(t2.shape(), std::vector<std::size_t>{4});
     EXPECT_EQ(t2(0), 0.0f);
     EXPECT_EQ(t2(2), 2.0f);
-    EXPECT_THROW(t2(4), std::invalid_argument);
+    EXPECT_THROW(t2(4), std::out_of_range);
     EXPECT_THROW(t2.item(), std::runtime_error);
 }
 
 TEST(TensorTest, Multiplication)
 {
-    std::shared_ptr<Tensor> s1 = std::make_shared<Tensor>(0.5f);
-    std::shared_ptr<Tensor> s2 = std::make_shared<Tensor>(5.0f);
+    auto s1 = std::make_shared<Tensor>(0.5f);
+    auto s2 = std::make_shared<Tensor>(5.0f);
 
-    std::shared_ptr<Tensor> v1 = std::make_shared<Tensor>(std::vector<float>{1.0f, 2.0f, 3.0f, 4.0f});
-    std::shared_ptr<Tensor> v2 = std::make_shared<Tensor>(std::vector<float>{5.0f, 10.0f});
-    std::shared_ptr<Tensor> v3 = s1 * v1;
-    std::shared_ptr<Tensor> v4 = v1->mm(v1);
+    auto v1 = std::make_shared<Tensor>(std::vector<float>{1.0f, 2.0f, 3.0f, 4.0f});
+    auto v2 = std::make_shared<Tensor>(std::vector<float>{5.0f, 10.0f});
+    auto v3 = s1 * v1;
+    auto v4 = v1->mm(v1);
 
-    std::shared_ptr<Tensor> m1 = std::make_shared<Tensor>(std::vector<std::vector<float>>{
+    auto m1 = std::make_shared<Tensor>(std::vector<std::vector<float>>{
         {1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 0.0f, 1.0f}
     });
-    std::shared_ptr<Tensor> m2 = m1->mm(m1);
-    std::shared_ptr<Tensor> m3 = v1->mm(m1);
+    auto m2 = m1->mm(m1);
+    auto m3 = v1->mm(m1);
 
     EXPECT_EQ((s1 * s2)->item(), 2.5f);
     EXPECT_EQ((*v3)(2), 1.5f);
@@ -44,4 +44,14 @@ TEST(TensorTest, Multiplication)
     EXPECT_EQ((*m3)(3), 4.0f);
 
     EXPECT_THROW(m1 * v2, std::invalid_argument);
+}
+
+TEST(TensorTest, SqueezeUnsqueeze)
+{
+    auto t = Tensor::zeros({80, 64, 64}, true);
+    auto u = t->unsqueeze(3);
+    auto s = u->squeeze(3);
+
+    EXPECT_EQ(u->shape(), (std::vector<std::size_t>{80, 64, 64, 1}));
+    EXPECT_EQ(t->shape(), s->shape());
 }

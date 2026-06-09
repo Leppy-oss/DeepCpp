@@ -138,4 +138,7 @@ public:
 
     friend std::shared_ptr<Tensor> mm(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2);
     std::shared_ptr<Tensor> mm(std::shared_ptr<Tensor> other);
+
+    std::shared_ptr<Tensor> squeeze(std::size_t dim);
+    std::shared_ptr<Tensor> unsqueeze(std::size_t dim);
 };

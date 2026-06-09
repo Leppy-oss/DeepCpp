@@ -705,3 +705,63 @@ std::shared_ptr<Tensor> mm(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t
 }
 
 std::shared_ptr<Tensor> Tensor::mm(std::shared_ptr<Tensor> other) { return ::mm(shared_from_this(), other); }
+
+std::shared_ptr<Tensor> Tensor::squeeze(std::size_t dim)
+{
+    if (dim >= ndim())
+    {
+        throw std::invalid_argument(
+            "Squeeze dimension " + std::to_string(dim) + " is out of bounds for tensor with " + std::to_string(ndim()) +
+            " dimensions"
+        );
+    }
+    if (shape_[dim] != 1)
+    {
+        throw std::invalid_argument(
+            "Shape is not 1 at dimension " + std::to_string(dim) + " (found " + std::to_string(shape_[dim]) + ")"
+        );
+    }
+    auto out_shape = shape_;
+    auto out_stride = stride_;
+    out_shape.erase(out_shape.begin() + dim);
+    out_stride.erase(out_stride.begin() + dim);
+
+    std::function<void(std::shared_ptr<Tensor>)> gradfn = nullptr;
+    std::vector<std::shared_ptr<Tensor>> parents = {};
+
+    if (requires_grad_)
+    {
+        auto self = shared_from_this();
+        gradfn = [self, dim](std::shared_ptr<Tensor> grad_prev) { self->add_grad(grad_prev->unsqueeze(dim)); };
+        parents = {self};
+    };
+
+    return std::make_shared<Tensor>(storage_, out_shape, out_stride, offset_, requires_grad_, gradfn, parents);
+}
+
+std::shared_ptr<Tensor> Tensor::unsqueeze(std::size_t dim)
+{
+    if (dim > ndim())
+    {
+        throw std::invalid_argument(
+            "Unsqueeze dimension " + std::to_string(dim) + " is out of bounds for tensor with " +
+            std::to_string(ndim()) + " dimensions"
+        );
+    }
+    auto out_shape = shape_;
+    auto out_stride = stride_;
+    out_shape.insert(out_shape.begin() + dim, 1);
+    out_stride.insert(out_stride.begin() + dim, dim == ndim() ? 1 : stride_[dim]);
+
+    std::function<void(std::shared_ptr<Tensor>)> gradfn = nullptr;
+    std::vector<std::shared_ptr<Tensor>> parents = {};
+
+    if (requires_grad_)
+    {
+        auto self = shared_from_this();
+        gradfn = [self, dim](std::shared_ptr<Tensor> grad_prev) { self->add_grad(grad_prev->squeeze(dim)); };
+        parents = {self};
+    };
+
+    return std::make_shared<Tensor>(storage_, out_shape, out_stride, offset_, requires_grad_, gradfn, parents);
+}
