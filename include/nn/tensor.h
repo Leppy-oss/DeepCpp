@@ -28,8 +28,8 @@ private:
     std::vector<std::size_t> stride_;
     std::size_t offset_ = 0;
 
-    std::vector<float> grad_;
-    std::function<void(const std::vector<float> &)> gradfn_;
+    std::shared_ptr<Tensor> grad_ = nullptr;
+    std::function<void(std::shared_ptr<Tensor>)> gradfn_;
     std::vector<std::shared_ptr<Tensor>> parents_;
     bool requires_grad_;
 
@@ -40,19 +40,19 @@ public:
     explicit Tensor(
         float data,
         bool requires_grad = false,
-        std::function<void(const std::vector<float> &)> gradfn = nullptr,
+        std::function<void(std::shared_ptr<Tensor>)> gradfn = nullptr,
         std::vector<std::shared_ptr<Tensor>> parents = {}
     );
     explicit Tensor(
         std::vector<float> data,
         bool requires_grad = false,
-        std::function<void(const std::vector<float> &)> gradfn = nullptr,
+        std::function<void(std::shared_ptr<Tensor>)> gradfn = nullptr,
         std::vector<std::shared_ptr<Tensor>> parents = {}
     );
     explicit Tensor(
         std::vector<std::vector<float>> data,
         bool requires_grad = false,
-        std::function<void(const std::vector<float> &)> gradfn = nullptr,
+        std::function<void(std::shared_ptr<Tensor>)> gradfn = nullptr,
         std::vector<std::shared_ptr<Tensor>> parents = {}
     );
 
@@ -60,7 +60,7 @@ public:
         std::vector<float> data,
         std::vector<std::size_t> shape,
         bool requires_grad = false,
-        std::function<void(const std::vector<float> &)> gradfn = nullptr,
+        std::function<void(std::shared_ptr<Tensor>)> gradfn = nullptr,
         std::vector<std::shared_ptr<Tensor>> parents = {}
     );
 
@@ -70,7 +70,14 @@ public:
         std::vector<std::size_t> stride,
         std::size_t offset = 0,
         bool requires_grad = false,
-        std::function<void(const std::vector<float> &)> gradfn = nullptr,
+        std::function<void(std::shared_ptr<Tensor>)> gradfn = nullptr,
+        std::vector<std::shared_ptr<Tensor>> parents = {}
+    );
+
+    static std::shared_ptr<Tensor> zeros(
+        std::vector<std::size_t> shape,
+        bool requires_grad = false,
+        std::function<void(std::shared_ptr<Tensor>)> gradfn = nullptr,
         std::vector<std::shared_ptr<Tensor>> parents = {}
     );
 
@@ -110,10 +117,10 @@ public:
     std::size_t ndim() const;
 
     bool requires_grad() const;
-    const std::vector<float> &grad() const;
+    std::shared_ptr<Tensor> grad() const;
 
     void zero_grad();
-    void add_to_grad(const std::vector<float> &grad_update);
+    void add_to_grad(std::shared_ptr<Tensor> grad_update);
 
     std::shared_ptr<Tensor> broadcast(const std::vector<std::size_t> &target_shape) const;
 
@@ -129,6 +136,6 @@ public:
     friend std::shared_ptr<Tensor> operator+(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2);
     friend std::shared_ptr<Tensor> operator*(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2);
 
-    friend std::shared_ptr<Tensor> matmul(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2);
-    std::shared_ptr<Tensor> matmul(std::shared_ptr<Tensor> other);
+    friend std::shared_ptr<Tensor> mm(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2);
+    std::shared_ptr<Tensor> mm(std::shared_ptr<Tensor> other);
 };
