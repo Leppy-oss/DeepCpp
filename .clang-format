@@ -21,3 +21,5 @@ BreakConstructorInitializers: AfterColon
 AllowShortBlocksOnASingleLine: false
 AllowShortIfStatementsOnASingleLine: false
 InsertBraces: true
+
+OneLineFormatOffRegex: no-format

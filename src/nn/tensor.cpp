@@ -240,6 +240,31 @@ std::shared_ptr<Tensor> Tensor::zeros(
     );
 }
 
+void Tensor::load_data(std::shared_ptr<std::vector<float>> data)
+{
+    if (data->size() != storage_->size())
+    {
+        throw std::runtime_error(
+            "Size mismatch when loading data (" + std::to_string(data->size()) + " vs " +
+            std::to_string(storage_->size()) + ")"
+        );
+    }
+    *storage_ = *data;
+}
+
+std::shared_ptr<Tensor> Tensor::deep_copy()
+{
+    std::vector<float> new_data;
+    new_data.reserve(numel());
+    for (float v : *storage_)
+    {
+        new_data.push_back(v);
+    }
+    return std::make_shared<Tensor>(
+        std::make_shared<std::vector<float>>(new_data), shape_, stride_, offset_, requires_grad_, gradfn_, parents_
+    );
+}
+
 std::shared_ptr<std::vector<float>> Tensor::storage() const { return storage_; }
 float Tensor::storage(std::size_t idx) const { return (*storage_)[idx]; }
 float &Tensor::storage(std::size_t idx) { return (*storage_)[idx]; }

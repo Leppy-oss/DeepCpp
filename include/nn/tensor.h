@@ -81,6 +81,9 @@ public:
         std::vector<std::shared_ptr<Tensor>> parents = {}
     );
 
+    void load_data(std::shared_ptr<std::vector<float>> data);
+    std::shared_ptr<Tensor> deep_copy();
+
     std::shared_ptr<std::vector<float>> storage() const;
     float storage(std::size_t idx) const;
     float &storage(std::size_t idx);
