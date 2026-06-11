@@ -1,3 +1,4 @@
+#include "nn/modules/flatten.h"
 #include "nn/tensor.h"
 #include <gtest/gtest.h>
 #include <vector>
@@ -52,6 +53,24 @@ TEST(TensorTest, SqueezeUnsqueeze)
     auto u = t->unsqueeze(3);
     auto s = u->squeeze(3);
 
-    EXPECT_EQ(u->shape(), (std::vector<std::size_t>{80, 64, 64, 1}));
+    EXPECT_EQ(u->shape(), (tensor::Shape{80, 64, 64, 1}));
     EXPECT_EQ(t->shape(), s->shape());
+}
+
+TEST(TensorTest, Reshape)
+{
+    auto t = Tensor::zeros({50, 4, 16}, true);
+    auto r = t->reshape({200, 16});
+
+    EXPECT_EQ(r->shape(), (tensor::Shape{200, 16}));
+}
+
+TEST(ModuleTest, Flatten)
+{
+    auto t = Tensor::zeros({50, 4, 16}, true);
+    auto f = Flatten();
+    auto ft = f(t);
+
+    EXPECT_EQ(ft->shape(), (tensor::Shape{50, 64}));
+    EXPECT_EQ(f.name(), "Flatten");
 }

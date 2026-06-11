@@ -45,6 +45,8 @@ std::vector<Parameter> Module::parameters() const
     return parameters;
 }
 
+Module::Module(std::string name) : name_{std::move(name)} {}
+
 void Module::add_parameter(Parameter param)
 {
     for (const Parameter &p : parameters_)

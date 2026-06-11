@@ -27,6 +27,7 @@ private:
     std::vector<std::shared_ptr<Module>> modules_;
 
 public:
+    Module(std::string name = "");
     const std::string &name() const;
     std::string &name();
 

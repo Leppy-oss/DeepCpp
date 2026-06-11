@@ -7,9 +7,9 @@
 
 namespace tensor
 {
-    std::vector<std::size_t> make_stride(const std::vector<std::size_t> &shape)
+    tensor::Stride make_stride(const tensor::Shape &shape)
     {
-        std::vector<std::size_t> stride(shape.size());
+        tensor::Stride stride(shape.size());
         std::size_t s = 1;
         for (int i = static_cast<int>(shape.size()) - 1; i >= 0; i--)
         {
@@ -19,7 +19,7 @@ namespace tensor
         return stride;
     }
 
-    std::size_t numel_shape(const std::vector<std::size_t> shape)
+    std::size_t numel_shape(const tensor::Shape &shape)
     {
         std::size_t numel = 1;
         for (std::size_t dim : shape)
@@ -29,10 +29,10 @@ namespace tensor
         return numel;
     }
 
-    std::vector<std::size_t> broadcast_shape(const std::vector<std::size_t> &a, const std::vector<std::size_t> &b)
+    tensor::Shape broadcast_shape(const tensor::Shape &a, const tensor::Shape &b)
     {
         std::size_t max_dim = std::max(a.size(), b.size());
-        std::vector<std::size_t> result(max_dim);
+        tensor::Shape result(max_dim);
         for (int i = 0; i < max_dim; i++)
         {
             std::size_t from_dim = 1;
@@ -62,9 +62,9 @@ namespace tensor
 
     std::size_t inv_broadcast_idx(
         std::size_t out_idx,
-        const std::vector<std::size_t> &out_shape,
-        const std::vector<std::size_t> &in_shape,
-        const std::vector<std::size_t> &in_stride,
+        const tensor::Shape &out_shape,
+        const tensor::Shape &in_shape,
+        const tensor::Stride &in_stride,
         std::size_t in_offset
     )
     {
@@ -175,7 +175,7 @@ Tensor::Tensor(
 
 Tensor::Tensor(
     std::vector<float> data,
-    std::vector<std::size_t> shape,
+    tensor::Shape shape,
     bool requires_grad,
     std::function<void(std::shared_ptr<Tensor>)> gradfn,
     std::vector<std::shared_ptr<Tensor>> parents
@@ -203,8 +203,8 @@ Tensor::Tensor(
 
 Tensor::Tensor(
     std::shared_ptr<std::vector<float>> storage,
-    std::vector<std::size_t> shape,
-    std::vector<std::size_t> stride,
+    tensor::Shape shape,
+    tensor::Stride stride,
     std::size_t offset,
     bool requires_grad,
     std::function<void(std::shared_ptr<Tensor>)> gradfn,
@@ -229,7 +229,7 @@ Tensor::Tensor(
 }
 
 std::shared_ptr<Tensor> Tensor::zeros(
-    std::vector<std::size_t> shape,
+    tensor::Shape shape,
     bool requires_grad,
     std::function<void(std::shared_ptr<Tensor>)> gradfn,
     std::vector<std::shared_ptr<Tensor>> parents
@@ -260,9 +260,7 @@ std::shared_ptr<Tensor> Tensor::deep_copy()
     {
         new_data.push_back(v);
     }
-    return std::make_shared<Tensor>(
-        std::make_shared<std::vector<float>>(new_data), shape_, stride_, offset_, requires_grad_, gradfn_, parents_
-    );
+    return std::make_shared<Tensor>(std::make_shared<std::vector<float>>(new_data), shape_, stride_, offset_);
 }
 
 std::shared_ptr<std::vector<float>> Tensor::storage() const { return storage_; }
@@ -275,7 +273,7 @@ float Tensor::item() const
     {
         throw std::runtime_error("item() can only be called on tensors with a single element");
     }
-    return (*storage_)[0];
+    return storage(0);
 }
 
 float &Tensor::item()
@@ -284,10 +282,10 @@ float &Tensor::item()
     {
         throw std::runtime_error("item() can only be called on tensors with a single element");
     }
-    return (*storage_)[0];
+    return storage(0);
 }
 
-std::size_t Tensor::flat_idx(const std::vector<std::size_t> &idx) const
+std::size_t Tensor::storage_idx(const std::vector<std::size_t> &idx) const
 {
     if (idx.size() != ndim())
     {
@@ -296,7 +294,7 @@ std::size_t Tensor::flat_idx(const std::vector<std::size_t> &idx) const
             std::to_string(ndim()) + " dimensions"
         );
     }
-    std::size_t flattened_idx = offset_;
+    std::size_t storage_idx = offset_;
     for (std::size_t dim = 0; dim < idx.size(); dim++)
     {
         if (idx[dim] >= shape_[dim])
@@ -306,16 +304,16 @@ std::size_t Tensor::flat_idx(const std::vector<std::size_t> &idx) const
                 " (max value " + std::to_string(shape_[dim]) + ")"
             );
         }
-        flattened_idx += idx[dim] * stride_[dim];
+        storage_idx += idx[dim] * stride_[dim];
     }
-    return flattened_idx;
+    return storage_idx;
 }
 
-float Tensor::operator()(const std::vector<std::size_t> &idx) const { return (*storage_)[flat_idx(idx)]; }
-float &Tensor::operator()(const std::vector<std::size_t> &idx) { return (*storage_)[flat_idx(idx)]; }
+float Tensor::operator()(const std::vector<std::size_t> &idx) const { return storage(storage_idx(idx)); }
+float &Tensor::operator()(const std::vector<std::size_t> &idx) { return storage(storage_idx(idx)); }
 
-const std::vector<std::size_t> &Tensor::shape() const { return shape_; }
-const std::vector<std::size_t> &Tensor::stride() const { return stride_; }
+const tensor::Shape &Tensor::shape() const { return shape_; }
+const tensor::Stride &Tensor::stride() const { return stride_; }
 
 std::size_t Tensor::idx_at_flat(std::size_t flat) const
 {
@@ -331,8 +329,8 @@ std::size_t Tensor::idx_at_flat(std::size_t flat) const
     return idx;
 }
 
-float Tensor::at(std::size_t idx) const { return (*storage_)[idx_at_flat(idx)]; }
-float &Tensor::at(std::size_t idx) { return (*storage_)[idx_at_flat(idx)]; }
+float Tensor::at(std::size_t idx) const { return storage(idx_at_flat(idx)); }
+float &Tensor::at(std::size_t idx) { return storage(idx_at_flat(idx)); }
 
 std::size_t Tensor::offset() const { return offset_; }
 std::size_t Tensor::numel() const { return tensor::numel_shape(shape_); }
@@ -406,7 +404,7 @@ std::ostream &Tensor::printf(std::ostream &os, std::size_t dim, std::vector<std:
     return os;
 }
 
-std::shared_ptr<Tensor> Tensor::broadcast(const std::vector<std::size_t> &target_shape) const
+std::shared_ptr<Tensor> Tensor::broadcast(const tensor::Shape &target_shape) const
 {
     if (target_shape == shape_)
     {
@@ -420,7 +418,7 @@ std::shared_ptr<Tensor> Tensor::broadcast(const std::vector<std::size_t> &target
         );
     }
 
-    std::vector<std::size_t> out_stride(target_shape.size());
+    tensor::Stride out_stride(target_shape.size());
 
     for (std::size_t out_dim = target_shape.size(); out_dim-- > target_shape.size() - ndim();)
     {
@@ -595,8 +593,8 @@ std::shared_ptr<Tensor> mm(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t
         t2_stride.push_back(0);
     }
 
-    auto t1_batch_shape = std::vector<std::size_t>(t1_shape.begin(), t1_shape.end() - 2);
-    auto t2_batch_shape = std::vector<std::size_t>(t2_shape.begin(), t2_shape.end() - 2);
+    auto t1_batch_shape = tensor::Shape(t1_shape.begin(), t1_shape.end() - 2);
+    auto t2_batch_shape = tensor::Shape(t2_shape.begin(), t2_shape.end() - 2);
 
     auto batch_shape = tensor::broadcast_shape(t1_batch_shape, t2_batch_shape);
 
@@ -613,7 +611,7 @@ std::shared_ptr<Tensor> mm(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t
         );
     }
 
-    std::vector<std::size_t> output_shape = batch_shape;
+    tensor::Shape output_shape = batch_shape;
     output_shape.push_back(M);
     output_shape.push_back(K);
 
@@ -629,8 +627,8 @@ std::shared_ptr<Tensor> mm(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t
     std::vector<float> output_data;
     output_data.reserve(tensor::numel_shape(output_shape));
 
-    auto t1_batch_stride = std::vector<std::size_t>(t1_stride.begin(), t1_stride.end() - 2);
-    auto t2_batch_stride = std::vector<std::size_t>(t2_stride.begin(), t2_stride.end() - 2);
+    auto t1_batch_stride = tensor::Stride(t1_stride.begin(), t1_stride.end() - 2);
+    auto t2_batch_stride = tensor::Stride(t2_stride.begin(), t2_stride.end() - 2);
 
     std::size_t num_batches = tensor::numel_shape(batch_shape);
 
@@ -731,7 +729,7 @@ std::shared_ptr<Tensor> mm(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t
 
 std::shared_ptr<Tensor> Tensor::mm(std::shared_ptr<Tensor> other) { return ::mm(shared_from_this(), other); }
 
-std::shared_ptr<Tensor> Tensor::squeeze(std::size_t dim)
+std::shared_ptr<Tensor> Tensor::squeeze(const std::size_t dim)
 {
     if (dim >= ndim())
     {
@@ -764,7 +762,7 @@ std::shared_ptr<Tensor> Tensor::squeeze(std::size_t dim)
     return std::make_shared<Tensor>(storage_, out_shape, out_stride, offset_, requires_grad_, gradfn, parents);
 }
 
-std::shared_ptr<Tensor> Tensor::unsqueeze(std::size_t dim)
+std::shared_ptr<Tensor> Tensor::unsqueeze(const std::size_t dim)
 {
     if (dim > ndim())
     {
@@ -789,4 +787,82 @@ std::shared_ptr<Tensor> Tensor::unsqueeze(std::size_t dim)
     };
 
     return std::make_shared<Tensor>(storage_, out_shape, out_stride, offset_, requires_grad_, gradfn, parents);
+}
+
+bool Tensor::is_contiguous() const { return offset_ == 0 && stride_ == tensor::make_stride(shape_); }
+
+std::shared_ptr<Tensor> Tensor::contiguous()
+{
+    if (is_contiguous())
+    {
+        return shared_from_this();
+    }
+
+    std::vector<float> new_data;
+    new_data.resize(numel());
+
+    for (std::size_t out_idx = 0; out_idx < numel(); out_idx++)
+    {
+        new_data[out_idx] = storage(idx_at_flat(out_idx));
+    }
+
+    std::function<void(std::shared_ptr<Tensor>)> gradfn = nullptr;
+    std::vector<std::shared_ptr<Tensor>> parents = {};
+
+    if (requires_grad_)
+    {
+        auto self = shared_from_this();
+        parents = {self};
+        gradfn = [self](std::shared_ptr<Tensor> grad_prev) { self->add_grad(grad_prev->contiguous()); };
+    }
+
+    return std::make_shared<Tensor>(new_data, shape_, requires_grad_, gradfn, parents);
+}
+
+std::shared_ptr<Tensor> Tensor::view(const tensor::Shape &shape)
+{
+    if (tensor::numel_shape(shape) != numel())
+    {
+        throw std::invalid_argument(
+            "Shape " + utils::to_string(shape) + " is not valid for tensor with " + std::to_string(numel()) +
+            " elements"
+        );
+    }
+
+    if (!is_contiguous())
+    {
+        throw std::runtime_error("Tensor is not contiguous");
+    }
+
+    std::function<void(std::shared_ptr<Tensor>)> gradfn = nullptr;
+    std::vector<std::shared_ptr<Tensor>> parents = {};
+
+    if (requires_grad_)
+    {
+        auto self = shared_from_this();
+        parents = {self};
+        gradfn = [self](std::shared_ptr<Tensor> grad_prev) { self->add_grad(grad_prev->view(self->shape())); };
+    }
+
+    return std::make_shared<Tensor>(
+        storage_, shape, tensor::make_stride(shape), offset_, requires_grad_, gradfn, parents
+    );
+}
+
+std::shared_ptr<Tensor> Tensor::reshape(const tensor::Shape &shape)
+{
+    if (tensor::numel_shape(shape) != numel())
+    {
+        throw std::invalid_argument(
+            "Shape " + utils::to_string(shape) + " is not valid for tensor with " + std::to_string(numel()) +
+            " elements"
+        );
+    }
+
+    if (is_contiguous())
+    {
+        return view(shape);
+    }
+
+    return contiguous()->view(shape);
 }
