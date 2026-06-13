@@ -1,2 +1,2 @@
 # CppTorch
-Basic neural network implementation of an MLP, trained on the MNIST dataset, all in C++!
+Barebones deep learning library for implementing simple neural nets in C++.
