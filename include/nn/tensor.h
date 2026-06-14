@@ -128,7 +128,7 @@ public:
     void zero_grad();
     void add_grad(std::shared_ptr<Tensor> grad_update);
 
-    std::shared_ptr<Tensor> broadcast(const std::vector<std::size_t> &target_shape) const;
+    std::shared_ptr<Tensor> broadcast(const tensor::Shape &target_shape) const;
 
     friend std::shared_ptr<Tensor> bin_elementwise(
         std::shared_ptr<Tensor> t1,
