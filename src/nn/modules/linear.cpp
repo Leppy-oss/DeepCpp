@@ -19,7 +19,7 @@ void Linear::reset_parameters()
 {
     float g = std::sqrt(2.0f);
     std::size_t fan_in = weight_->shape()[0];
-    float b = g * std::sqrt(3 / fan_in);
+    float b = g * std::sqrt(3.0f / fan_in);
     std::mt19937 gen(seed_);
 
     for (std::size_t i = 0; i < weight_->numel(); i++)

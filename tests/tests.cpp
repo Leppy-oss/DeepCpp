@@ -1,6 +1,9 @@
 #include "nn/modules/flatten.h"
+#include "nn/modules/linear.h"
+#include "nn/modules/module.h"
 #include "nn/tensor.h"
 #include <gtest/gtest.h>
+#include <memory>
 #include <vector>
 
 TEST(TensorTest, Construction)
@@ -73,4 +76,21 @@ TEST(ModuleTest, Flatten)
 
     EXPECT_EQ(ft->shape(), (tensor::Shape{50, 64}));
     EXPECT_EQ(f.name(), "Flatten");
+}
+
+TEST(ModuleTest, Linear)
+{
+    std::vector<std::shared_ptr<Module>> layers = {
+        std::make_shared<Flatten>(),
+        std::make_shared<Linear>(784, 128),
+        std::make_shared<Linear>(128, 64),
+        std::make_shared<Linear>(64, 10)
+    };
+    auto x = Tensor::zeros({128, 28, 28});
+    auto y = x;
+    for (auto &m : layers)
+    {
+        y = (*m)(y);
+    }
+    EXPECT_EQ(y->shape(), (tensor::Shape{128, 10}));
 }
