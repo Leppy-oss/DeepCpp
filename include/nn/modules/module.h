@@ -25,9 +25,10 @@ private:
     std::string name_;
     std::vector<Parameter> parameters_;
     std::vector<std::shared_ptr<Module>> modules_;
+    static std::unordered_map<std::string, std::size_t> names_;
 
 public:
-    Module(std::string name = "");
+    Module(std::string name);
     const std::string &name() const;
     std::string &name();
 

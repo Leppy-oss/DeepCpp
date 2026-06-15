@@ -4,6 +4,7 @@
 #include <random>
 
 Linear::Linear(std::size_t in_features, std::size_t out_features, std::size_t seed) :
+    Module("Linear"),
     weight_{Tensor::zeros({in_features, out_features}, true)},
     bias_{Tensor::zeros({out_features}, true)},
     seed_{seed}

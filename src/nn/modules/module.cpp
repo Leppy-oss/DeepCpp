@@ -3,6 +3,7 @@
 #include "utils.h"
 #include <iostream>
 #include <memory>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -13,6 +14,17 @@ const std::string &Parameter::name() const { return name_; }
 std::string &Parameter::name() { return name_; }
 
 std::shared_ptr<Tensor> Parameter::param() const { return param_; }
+
+std::unordered_map<std::string, std::size_t> Module::names_;
+
+Module::Module(std::string name)
+{
+    if (name.empty())
+    {
+        name = "Module";
+    }
+    name_ = name + std::to_string(names_[name]++);
+}
 
 const std::string &Module::name() const { return name_; }
 
@@ -44,8 +56,6 @@ std::vector<Parameter> Module::parameters() const
 
     return parameters;
 }
-
-Module::Module(std::string name) : name_{std::move(name)} {}
 
 void Module::add_parameter(Parameter param)
 {
