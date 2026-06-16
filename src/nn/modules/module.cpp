@@ -32,7 +32,7 @@ std::string &Module::name() { return name_; }
 
 std::shared_ptr<Tensor> Module::forward(std::shared_ptr<Tensor> x)
 {
-    throw std::runtime_error("Cannot call forward on based Module class");
+    throw std::runtime_error("Cannot call forward on base Module class");
 }
 
 std::shared_ptr<Tensor> Module::operator()(std::shared_ptr<Tensor> x) { return forward(x); }
