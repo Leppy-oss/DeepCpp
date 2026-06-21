@@ -1,6 +1,7 @@
 #include "nn/modules/flatten.h"
 #include "nn/modules/linear.h"
 #include "nn/modules/module.h"
+#include "nn/modules/softmax.h"
 #include "nn/tensor.h"
 #include <gtest/gtest.h>
 #include <memory>
@@ -93,4 +94,11 @@ TEST(ModuleTest, Linear)
         y = (*m)(y);
     }
     EXPECT_EQ(y->shape(), (tensor::Shape{128, 10}));
+}
+
+TEST(ModuleTest, Softmax)
+{
+    auto x = Tensor::zeros({128, 10});
+    auto sm = Softmax();
+    EXPECT_EQ(sm(x)->shape(), (tensor::Shape{128, 10}));
 }
