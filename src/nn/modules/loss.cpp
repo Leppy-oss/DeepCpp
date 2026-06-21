@@ -15,5 +15,5 @@ std::shared_ptr<Tensor> Loss::forward(std::shared_ptr<Tensor> y_hat, std::shared
 
 std::shared_ptr<Tensor> Loss::operator()(std::shared_ptr<Tensor> y_hat, std::shared_ptr<Tensor> y)
 {
-    return forward(y, y_hat);
+    return forward(y_hat, y);
 }

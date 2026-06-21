@@ -5,7 +5,7 @@
 #include <memory>
 #include <vector>
 
-Softmax::Softmax(std::size_t dim) : dim_{dim}, Module("Softmax") {}
+Softmax::Softmax(std::size_t dim) : Module("Softmax"), dim_{dim} {}
 
 std::shared_ptr<Tensor> Softmax::forward(std::shared_ptr<Tensor> x)
 {
@@ -13,6 +13,7 @@ std::shared_ptr<Tensor> Softmax::forward(std::shared_ptr<Tensor> x)
     {
         throw std::invalid_argument("Softmax requires tensor to be at least 1d");
     }
+
     if (dim_ >= x->ndim())
     {
         throw std::runtime_error(
@@ -23,15 +24,17 @@ std::shared_ptr<Tensor> Softmax::forward(std::shared_ptr<Tensor> x)
     tensor::Shape shape = x->shape();
     std::size_t shape_dim = shape[dim_];
 
-    std::size_t outer = 1;
-    for (std::size_t i = 0; i < dim_; i++)
+    std::size_t outer = 1, inner = 1;
+    for (std::size_t dim = 0; dim < x->ndim(); dim++)
     {
-        outer *= shape[i];
-    }
-    std::size_t inner = 1;
-    for (std::size_t i = dim_ + 1; i < x->ndim(); i++)
-    {
-        inner *= shape[i];
+        if (dim < dim_)
+        {
+            outer *= shape[dim];
+        }
+        else if (dim > dim_)
+        {
+            inner *= shape[dim];
+        }
     }
 
     std::vector<float> out_data(x->numel());
