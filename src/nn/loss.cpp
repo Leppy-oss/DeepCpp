@@ -1,6 +1,6 @@
-#include "nn/modules/loss.h"
-#include "nn/modules/module.h"
-#include "nn/tensor.h"
+#include "nn/loss.h"
+#include "nn/module.h"
+#include "tensor.h"
 #include <memory>
 
 std::shared_ptr<Tensor> Loss::forward(std::shared_ptr<Tensor> x)

@@ -1,5 +1,5 @@
-#include "nn/modules/softmax.h"
-#include "nn/tensor.h"
+#include "nn/softmax.h"
+#include "tensor.h"
 #include <functional>
 #include <limits>
 #include <memory>

@@ -1,4 +1,4 @@
-#include "nn/tensor.h"
+#include "tensor.h"
 #include <iostream>
 #include <sstream>
 #include <string>

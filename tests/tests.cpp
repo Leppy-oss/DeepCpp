@@ -1,8 +1,8 @@
-#include "nn/modules/flatten.h"
-#include "nn/modules/linear.h"
-#include "nn/modules/module.h"
-#include "nn/modules/softmax.h"
-#include "nn/tensor.h"
+#include "nn/flatten.h"
+#include "nn/linear.h"
+#include "nn/module.h"
+#include "nn/softmax.h"
+#include "tensor.h"
 #include <gtest/gtest.h>
 #include <memory>
 #include <vector>

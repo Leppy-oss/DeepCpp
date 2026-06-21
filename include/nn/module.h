@@ -1,5 +1,5 @@
 #pragma once
-#include "nn/tensor.h"
+#include "tensor.h"
 #include <memory>
 #include <string>
 #include <unordered_map>

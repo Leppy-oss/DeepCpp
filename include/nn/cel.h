@@ -1,5 +1,6 @@
+#pragma once
 #include "loss.h"
-#include "nn/tensor.h"
+#include "tensor.h"
 #include <memory>
 
 class Cel : public Loss

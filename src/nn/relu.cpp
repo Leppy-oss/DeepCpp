@@ -1,6 +1,6 @@
-#include "nn/modules/relu.h"
-#include "nn/modules/module.h"
-#include "nn/tensor.h"
+#include "nn/relu.h"
+#include "nn/module.h"
+#include "tensor.h"
 #include <functional>
 #include <memory>
 

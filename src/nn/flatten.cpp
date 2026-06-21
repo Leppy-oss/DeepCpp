@@ -1,5 +1,5 @@
-#include "nn/modules/flatten.h"
-#include "nn/tensor.h"
+#include "nn/flatten.h"
+#include "tensor.h"
 #include <memory>
 
 Flatten::Flatten(std::size_t dim) : Module("Flatten"), dim_{dim} {}

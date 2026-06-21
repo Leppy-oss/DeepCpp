@@ -1,5 +1,6 @@
+#pragma once
 #include "module.h"
-#include "nn/tensor.h"
+#include "tensor.h"
 #include <memory>
 
 class Softmax : public Module

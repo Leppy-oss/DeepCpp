@@ -1,6 +1,6 @@
 #pragma once
 #include "module.h"
-#include "nn/tensor.h"
+#include "tensor.h"
 #include <memory>
 
 class Flatten : public Module

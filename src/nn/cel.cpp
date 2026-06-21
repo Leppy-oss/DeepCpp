@@ -1,7 +1,7 @@
-#include "nn/modules/cel.h"
-#include "nn/modules/loss.h"
-#include "nn/modules/module.h"
-#include "nn/tensor.h"
+#include "nn/cel.h"
+#include "nn/loss.h"
+#include "nn/module.h"
+#include "tensor.h"
 #include "utils.h"
 #include <functional>
 #include <limits>

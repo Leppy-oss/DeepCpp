@@ -1,5 +1,5 @@
-#include "nn/modules/module.h"
-#include "nn/tensor.h"
+#include "nn/module.h"
+#include "tensor.h"
 #include "utils.h"
 #include <iostream>
 #include <memory>

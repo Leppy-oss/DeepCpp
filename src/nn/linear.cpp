@@ -1,5 +1,5 @@
-#include "nn/modules/linear.h"
-#include "nn/tensor.h"
+#include "nn/linear.h"
+#include "tensor.h"
 #include <memory>
 #include <random>
 
