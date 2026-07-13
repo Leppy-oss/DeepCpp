@@ -35,9 +35,12 @@ private:
     std::function<void(std::shared_ptr<Tensor>)> gradfn_;
     std::vector<std::shared_ptr<Tensor>> parents_;
     bool requires_grad_;
+    bool visited_;
 
     std::size_t storage_idx(const std::vector<std::size_t> &idx) const;
     std::ostream &printf(std::ostream &os, std::size_t dim, std::vector<std::size_t> &idx) const;
+    void reset_visited();
+    void build_topo(std::vector<std::shared_ptr<Tensor>> &order);
 
 public:
     explicit Tensor(
@@ -127,6 +130,8 @@ public:
 
     void zero_grad();
     void add_grad(std::shared_ptr<Tensor> grad_update);
+
+    void backward();
 
     std::shared_ptr<Tensor> broadcast(const tensor::Shape &target_shape) const;
 

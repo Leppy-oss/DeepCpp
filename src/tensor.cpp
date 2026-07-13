@@ -370,6 +370,62 @@ void Tensor::add_grad(std::shared_ptr<Tensor> grad_update)
     }
 }
 
+void Tensor::backward()
+{
+    if (!requires_grad_)
+    {
+        throw std::runtime_error("Cannot call backward() on tensor that does not require grad");
+    }
+
+    if (ndim() != 0)
+    {
+        throw std::runtime_error("Can only call backward() on 1D tensors");
+    }
+
+    reset_visited();
+
+    std::vector<std::shared_ptr<Tensor>> topo_order;
+    build_topo(topo_order);
+
+    grad_ = std::make_shared<Tensor>(1.0f);
+
+    for (std::size_t i = topo_order.size(); i-- > 0;)
+    {
+        if ((*topo_order[i]).gradfn_)
+        {
+            topo_order[i]->gradfn_(topo_order[i]->grad_);
+        }
+    }
+}
+
+void Tensor::reset_visited()
+{
+    if (!visited_ || !requires_grad_)
+    {
+        return;
+    }
+    visited_ = false;
+    for (auto &parent : parents_)
+    {
+        parent->reset_visited();
+    }
+}
+
+void Tensor::build_topo(std::vector<std::shared_ptr<Tensor>> &order)
+{
+    if (visited_ || !requires_grad_)
+    {
+        return;
+    }
+    visited_ = true;
+    for (auto &parent : parents_)
+    {
+        parent->build_topo(order);
+    }
+
+    order.push_back(shared_from_this());
+}
+
 std::ostream &Tensor::printf(std::ostream &os, std::size_t dim, std::vector<std::size_t> &idx) const
 {
     os << "[";
