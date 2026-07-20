@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-class MNIST : public Dataset<MNIST>
+class MNISTDataset : public Dataset<MNISTDataset>
 {
 private:
     std::vector<std::vector<std::vector<float>>> imgs_;
@@ -13,5 +13,7 @@ private:
     std::pair<std::shared_ptr<Tensor>, std::size_t> get_item_(std::size_t idx);
 
 public:
-    MNIST(std::string path);
+    MNISTDataset(const std::string &path);
+
+    std::size_t length() override;
 };
