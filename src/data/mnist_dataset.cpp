@@ -15,12 +15,12 @@ std::vector<std::vector<std::vector<float>>> load_images(const std::string &path
 {
     std::ifstream file(path, std::ios::binary);
 
-    if (!file.is_open())
+    if (!file || !file.is_open())
     {
         throw std::runtime_error("Could not open file '" + path + "'");
     }
 
-    uint32_t magic_number = 0, len = 0, rows = 0, cols = 0;
+    uint32_t magic_number, len, rows, cols;
 
     file.read(reinterpret_cast<char *>(&magic_number), 4);
     magic_number = reverse_endian(magic_number);
@@ -66,7 +66,7 @@ std::vector<std::size_t> load_labels(const std::string &path)
         throw std::runtime_error("Could not open file '" + path + "'");
     }
 
-    uint32_t magic_number = 0, len = 0;
+    uint32_t magic_number, len;
 
     file.read(reinterpret_cast<char *>(&magic_number), 4);
     magic_number = reverse_endian(magic_number);
@@ -97,7 +97,9 @@ MNISTDataset::MNISTDataset(const std::string &path)
 
 std::pair<std::shared_ptr<Tensor>, std::shared_ptr<Tensor>> MNISTDataset::get_item(std::size_t idx)
 {
-    return std::make_pair(std::make_shared<Tensor>(imgs_[idx]), std::make_shared<Tensor>(labels_[idx]));
+    return std::make_pair(
+        std::make_shared<Tensor>(imgs_[idx]), std::make_shared<Tensor>(static_cast<float>(labels_[idx]))
+    );
 }
 
 std::size_t MNISTDataset::length() { return imgs_.size(); }

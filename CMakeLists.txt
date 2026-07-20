@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+add_compile_definitions(PROJECT_ROOT="${CMAKE_SOURCE_DIR}")
 include_directories(include)
 enable_testing()
 

@@ -107,5 +107,5 @@ TEST(ModuleTest, Argmax)
 {
     auto x = std::make_shared<Tensor>(std::vector<float>{1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1})->unsqueeze(0);
     auto am = Argmax();
-    EXPECT_EQ(am(x)->at(0), 5);
+    EXPECT_EQ(am(x)->at(0), static_cast<float>(5));
 }

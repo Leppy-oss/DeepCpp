@@ -4,6 +4,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace utils
@@ -25,6 +26,11 @@ namespace utils
     }
 
     void imshow(std::shared_ptr<Tensor> img);
+
+    // clang-format off
+    void save_model(const std::unordered_map<std::string, std::shared_ptr<Tensor>> &state_dict, const std::string &path);
+    // clang-format on
+    std::unordered_map<std::string, std::shared_ptr<Tensor>> load_model(const std::string &path);
 }
 
 template <typename T> std::ostream &operator<<(std::ostream &os, const std::vector<T> &obj)

@@ -10,6 +10,7 @@
 #include "optim/adam.h"
 #include "tensor.h"
 #include <algorithm>
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <memory>
@@ -18,7 +19,7 @@
 
 void train_epoch(DataLoader &dataloader, Sequential &model, Adam &optim, Cel &loss_fn)
 {
-    std::size_t log_interval = 1;
+    std::size_t log_interval = 100;
     std::size_t batch_idx = 0;
 
     for (const auto &batch : dataloader)
@@ -45,7 +46,7 @@ void test_epoch(DataLoader &dataloader, Sequential &model, Cel &loss_fn, Argmax 
     for (const auto &batch : dataloader)
     {
         auto preds = model(batch.first);
-        auto gts = model(batch.second);
+        auto gts = batch.second;
         total_loss += loss_fn(preds, gts)->item();
         auto cls = am(preds);
         for (std::size_t batch = 0; batch < dataloader.batch_size(); batch++)
@@ -65,13 +66,14 @@ void test_epoch(DataLoader &dataloader, Sequential &model, Cel &loss_fn, Argmax 
 int main()
 {
     std::cout << "Loading training dataset\n";
-    MNISTDataset train_dataset("../data/train/");
-    // std::cout << "Loading test dataset\n";
-    // MNISTDataset test_dataset("../data/test/");
+    MNISTDataset train_dataset(std::string(PROJECT_ROOT) + "/data/train/");
     DataLoader train_dataloader(&train_dataset, 32, true);
-    // DataLoader test_dataloader(&test_dataset, 32, true);
 
-    std::cout << "Instantiating model\n";
+    std::cout << "Loading test dataset\n";
+    MNISTDataset test_dataset(std::string(PROJECT_ROOT) + "/data/test/");
+    DataLoader test_dataloader(&test_dataset, 128, true);
+
+    std::cout << "Instantiating model, optimizer, etc.\n";
     Sequential model(
         {std::make_shared<Flatten>(),
          std::make_shared<Relu>(),
@@ -81,19 +83,31 @@ int main()
          std::make_shared<Relu>(),
          std::make_shared<Linear>(128, 10)}
     );
+
     Adam optim(model.parameters());
     Cel loss_fn;
     Argmax am;
 
-    std::size_t num_epochs = 20;
+    std::string model_path = std::string(PROJECT_ROOT) + "/models/mnist.nn";
+    if (std::filesystem::exists(model_path))
+    {
+        std::cout << "Found serialized mnist.nn, loading model state dict\n";
+        auto state_dict = utils::load_model(model_path);
+        model.load_state_dict(state_dict);
+    }
+
+    std::size_t num_epochs = 1;
     for (std::size_t epoch = 0; epoch < num_epochs; epoch++)
     {
         std::cout << "Training epoch " << epoch << " / " << num_epochs << "...\n";
         train_epoch(train_dataloader, model, optim, loss_fn);
 
-        //     std::cout << "Testing epoch " << epoch << " / " << num_epochs << "...\n";
-        //     test_epoch(test_dataloader, model, loss_fn, am);
+        std::cout << "Testing epoch " << epoch << " / " << num_epochs << "...\n";
+        test_epoch(test_dataloader, model, loss_fn, am);
     }
+
+    std::cout << "Serializing model to " + model_path + "\n";
+    utils::save_model(model.state_dict(), model_path);
 
     return 0;
 }
