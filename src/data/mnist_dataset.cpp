@@ -35,11 +35,59 @@ std::vector<std::vector<std::vector<float>>> load_images(const std::string &path
     file.read(reinterpret_cast<char *>(&cols), 4);
     cols = reverse_endian(cols);
 
-    std::cout << magic_number << ", " << len << ", " << rows << ", " << cols << std::endl;
-    return {};
+    std::vector<std::vector<std::vector<float>>> data(
+        len, std::vector<std::vector<float>>(rows, std::vector<float>(cols))
+    );
+
+    for (std::size_t i = 0; i < len; i++)
+    {
+        for (std::size_t r = 0; r < rows; r++)
+        {
+            for (std::size_t c = 0; c < cols; c++)
+            {
+                uint8_t byte;
+                file.read(reinterpret_cast<char *>(&byte), 1);
+                data[i][r][c] = static_cast<float>(byte);
+            }
+        }
+    }
+
+    file.close();
+
+    return data;
 }
 
-std::vector<std::size_t> load_labels(const std::string &path) { return {}; }
+std::vector<std::size_t> load_labels(const std::string &path)
+{
+    std::ifstream file(path, std::ios::binary);
+
+    if (!file.is_open())
+    {
+        throw std::runtime_error("Could not open file '" + path + "'");
+    }
+
+    uint32_t magic_number = 0, len = 0;
+
+    file.read(reinterpret_cast<char *>(&magic_number), 4);
+    magic_number = reverse_endian(magic_number);
+    if (magic_number != 2049)
+    {
+        throw std::runtime_error("File '" + path + "' is not in proper MNIST data format");
+    }
+    file.read(reinterpret_cast<char *>(&len), 4);
+    len = reverse_endian(len);
+
+    std::vector<std::size_t> data(len);
+
+    for (std::size_t i = 0; i < len; i++)
+    {
+        file.read(reinterpret_cast<char *>(&data[i]), 1);
+    }
+
+    file.close();
+
+    return data;
+}
 
 MNISTDataset::MNISTDataset(const std::string &path)
 {
