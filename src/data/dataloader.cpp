@@ -42,7 +42,7 @@ std::pair<std::shared_ptr<Tensor>, std::shared_ptr<Tensor>> DataLoader::Iterator
     return std::make_pair(Tensor::stack(inputs), Tensor::stack(targets));
 }
 
-bool DataLoader::Iterator::operator!=(const DataLoader::Iterator &other) { idx_ != other.idx_; }
+bool DataLoader::Iterator::operator!=(const DataLoader::Iterator &other) { return idx_ != other.idx_; }
 
 DataLoader::Iterator DataLoader::begin() { return Iterator(this, 0); }
 DataLoader::Iterator DataLoader::end() { return Iterator(this, dataset_->length()); }
