@@ -8,15 +8,14 @@
 #include <utility>
 #include <vector>
 
-DataLoader::DataLoader(Dataset *dataset, int batch_size, bool shuffle) : dataset_{dataset}, batch_size_{batch_size}
+DataLoader::DataLoader(Dataset *dataset, int batch_size, bool shuffle) :
+    dataset_{dataset},
+    batch_size_{batch_size},
+    shuffle_{shuffle},
+    g_{std::mt19937(std::random_device()())}
 {
     idx_map_.resize(length());
     std::iota(idx_map_.begin(), idx_map_.end(), 0);
-
-    if (shuffle)
-    {
-        std::shuffle(idx_map_.begin(), idx_map_.end(), std::mt19937(std::random_device()()));
-    }
 }
 
 DataLoader::Iterator::Iterator(DataLoader *dataloader, std::size_t idx) : dataloader_{dataloader}, idx_{idx} {}
@@ -32,9 +31,9 @@ std::pair<std::shared_ptr<Tensor>, std::shared_ptr<Tensor>> DataLoader::Iterator
     std::vector<std::shared_ptr<Tensor>> inputs;
     std::vector<std::shared_ptr<Tensor>> targets;
 
-    for (std::size_t i = 0; i < dataloader_->batch_size(); i++)
+    for (std::size_t i = idx_; i < std::min(idx_ + dataloader_->batch_size(), dataloader_->length()); i++)
     {
-        auto sample = dataloader_->dataset_->get_item(dataloader_->idx_map_[idx_ + i]);
+        auto sample = dataloader_->dataset_->get_item(dataloader_->idx_map_[i]);
         inputs.push_back(sample.first);
         targets.push_back(sample.second);
     }
@@ -44,7 +43,15 @@ std::pair<std::shared_ptr<Tensor>, std::shared_ptr<Tensor>> DataLoader::Iterator
 
 bool DataLoader::Iterator::operator!=(const DataLoader::Iterator &other) { return idx_ != other.idx_; }
 
-DataLoader::Iterator DataLoader::begin() { return Iterator(this, 0); }
+DataLoader::Iterator DataLoader::begin()
+{
+    if (shuffle_)
+    {
+        std::shuffle(idx_map_.begin(), idx_map_.end(), g_);
+    }
+    return Iterator(this, 0);
+}
+
 DataLoader::Iterator DataLoader::end() { return Iterator(this, dataset_->length()); }
 
 std::size_t DataLoader::batch_size() const { return batch_size_; }

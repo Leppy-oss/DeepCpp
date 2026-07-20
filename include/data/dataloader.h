@@ -2,6 +2,7 @@
 #include "data/dataset.h"
 #include "tensor.h"
 #include <memory>
+#include <random>
 #include <utility>
 
 class DataLoader
@@ -9,7 +10,9 @@ class DataLoader
 private:
     Dataset *dataset_;
     int batch_size_;
+    bool shuffle_;
     std::vector<std::size_t> idx_map_;
+    std::mt19937 g_;
 
 public:
     DataLoader(Dataset *dataset, int batch_size, bool shuffle = false);

@@ -89,7 +89,7 @@ std::shared_ptr<Tensor> Cel::forward(std::shared_ptr<Tensor> y_hat, std::shared_
                 ps[cls * inner + outer_inner_idx] /= sum;
             }
 
-            loss -= std::log(ps[gt_cls * inner + outer_inner_idx]);
+            loss -= (y_hat->at(gt_cls * inner + outer_inner_idx) - max_val - std::log(sum));
         }
     }
 
