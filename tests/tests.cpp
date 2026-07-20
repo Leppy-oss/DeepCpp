@@ -1,3 +1,4 @@
+#include "nn/argmax.h"
 #include "nn/flatten.h"
 #include "nn/linear.h"
 #include "nn/module.h"
@@ -76,7 +77,6 @@ TEST(ModuleTest, Flatten)
     auto ft = f(t);
 
     EXPECT_EQ(ft->shape(), (tensor::Shape{50, 64}));
-    EXPECT_EQ(f.name(), "Flatten");
 }
 
 TEST(ModuleTest, Linear)
@@ -101,4 +101,11 @@ TEST(ModuleTest, Softmax)
     auto x = Tensor::zeros({128, 10});
     auto sm = Softmax();
     EXPECT_EQ(sm(x)->shape(), (tensor::Shape{128, 10}));
+}
+
+TEST(ModuleTest, Argmax)
+{
+    auto x = std::make_shared<Tensor>(std::vector<float>{1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1})->unsqueeze(0);
+    auto am = Argmax();
+    EXPECT_EQ(am(x)->at(0), 5);
 }

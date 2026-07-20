@@ -1,0 +1,14 @@
+#pragma once
+#include "module.h"
+#include "tensor.h"
+#include <memory>
+
+class Argmax : public Module
+{
+private:
+    std::size_t dim_;
+
+public:
+    Argmax(std::size_t dim = 1);
+    std::shared_ptr<Tensor> forward(std::shared_ptr<Tensor> x) override;
+};
