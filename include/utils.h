@@ -1,5 +1,7 @@
 #pragma once
+#include "tensor.h"
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -28,3 +30,5 @@ template <typename T> std::ostream &operator<<(std::ostream &os, const std::vect
     os << utils::to_string(obj);
     return os;
 }
+
+void imshow(std::shared_ptr<Tensor> img);

@@ -9,6 +9,7 @@
 int main()
 {
     MNISTDataset train_dataset("../data/train/");
+    imshow(train_dataset.get_item(5).first);
 
     return 0;
 }

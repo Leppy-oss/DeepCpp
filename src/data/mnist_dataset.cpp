@@ -1,6 +1,5 @@
 #include "data/mnist_dataset.h"
 #include <fstream>
-#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -93,6 +92,11 @@ MNISTDataset::MNISTDataset(const std::string &path)
 {
     imgs_ = load_images(path + "images");
     labels_ = load_labels(path + "labels");
+}
+
+std::pair<std::shared_ptr<Tensor>, std::size_t> MNISTDataset::get_item_(std::size_t idx)
+{
+    return std::make_pair(std::make_shared<Tensor>(imgs_[idx]), labels_[idx]);
 }
 
 std::size_t MNISTDataset::length() { return imgs_.size(); }
