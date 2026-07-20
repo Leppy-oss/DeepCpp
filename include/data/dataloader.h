@@ -12,7 +12,7 @@ private:
     std::vector<std::size_t> idx_map_;
 
 public:
-    DataLoader(Dataset *dataset, int batch_size, bool shuffle);
+    DataLoader(Dataset *dataset, int batch_size, bool shuffle = false);
 
     class Iterator
     {

@@ -942,9 +942,7 @@ std::shared_ptr<Tensor> Tensor::stack(const std::vector<std::shared_ptr<Tensor>>
     auto out_shape = shape;
     out_shape.insert(out_shape.begin() + dim, tensors.size());
 
-    std::size_t out_numel = tensors[0]->numel() * tensors.size();
-
-    std::vector<float> out_data(out_numel);
+    std::vector<float> out_data(tensors[0]->numel() * tensors.size());
 
     std::size_t outer_numel = 1;
     for (std::size_t i = 0; i < dim; i++)
@@ -960,13 +958,13 @@ std::shared_ptr<Tensor> Tensor::stack(const std::vector<std::shared_ptr<Tensor>>
 
     for (std::size_t outer_idx = 0; outer_idx < outer_numel; outer_idx++)
     {
-        for (std::size_t in_idx = 0; in_idx < tensors.size(); in_idx++)
+        for (std::size_t idx = 0; idx < tensors.size(); idx++)
         {
             std::size_t in_offset = outer_idx * inner_numel;
-            std::size_t out_offset = (outer_idx * tensors.size() + in_idx) * inner_numel;
+            std::size_t out_offset = (outer_idx * tensors.size() + idx) * inner_numel;
             for (std::size_t inner_idx = 0; inner_idx < inner_numel; inner_idx++)
             {
-                out_data[out_offset + inner_idx] = tensors[in_idx]->at(in_offset + inner_idx);
+                out_data[out_offset + inner_idx] = tensors[idx]->at(in_offset + inner_idx);
             }
         }
     }

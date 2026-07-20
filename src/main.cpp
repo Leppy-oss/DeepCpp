@@ -1,3 +1,4 @@
+#include "data/dataloader.h"
 #include "data/mnist_dataset.h"
 #include "nn/cel.h"
 #include "tensor.h"
@@ -8,14 +9,11 @@
 
 int main()
 {
-    // MNISTDataset train_dataset("../data/train/");
-    // imshow(train_dataset.get_item(5).first);
+    MNISTDataset train_dataset("../data/train/");
+    DataLoader train_dataloader(&train_dataset, 1, true);
 
-    auto t1 = std::make_shared<Tensor>(std::vector<float>{1, 1, 1});
-    auto t2 = std::make_shared<Tensor>(std::vector<float>{2, 2, 2});
-    auto t3 = std::make_shared<Tensor>(std::vector<float>{3, 3, 3});
-
-    std::cout << *Tensor::stack({t1, t2, t3}) << std::endl;
+    utils::imshow((*train_dataloader.begin()).first->squeeze(0));
+    std::cout << (*train_dataloader.begin()).second->squeeze(0)->item() << "\n";
 
     return 0;
 }
