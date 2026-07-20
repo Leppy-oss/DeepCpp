@@ -2,6 +2,7 @@
 #include <fstream>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 uint32_t reverse_endian(uint32_t val)
@@ -94,9 +95,9 @@ MNISTDataset::MNISTDataset(const std::string &path)
     labels_ = load_labels(path + "labels");
 }
 
-std::pair<std::shared_ptr<Tensor>, std::size_t> MNISTDataset::get_item_(std::size_t idx)
+std::pair<std::shared_ptr<Tensor>, std::shared_ptr<Tensor>> MNISTDataset::get_item(std::size_t idx)
 {
-    return std::make_pair(std::make_shared<Tensor>(imgs_[idx]), labels_[idx]);
+    return std::make_pair(std::make_shared<Tensor>(imgs_[idx]), std::make_shared<Tensor>(labels_[idx]));
 }
 
 std::size_t MNISTDataset::length() { return imgs_.size(); }
