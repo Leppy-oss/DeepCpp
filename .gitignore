@@ -1,4 +1,6 @@
 data/
+!include/data/
+!src/data/
 
 # Help tools that honor '.gitignore' (redundant for Git itself).
 /.git
