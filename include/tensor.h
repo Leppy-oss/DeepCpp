@@ -157,4 +157,5 @@ public:
     std::shared_ptr<Tensor> contiguous();
     std::shared_ptr<Tensor> view(const tensor::Shape &shape);
     std::shared_ptr<Tensor> reshape(const tensor::Shape &shape);
+    static std::shared_ptr<Tensor> stack(const std::vector<std::shared_ptr<Tensor>> &tensors, std::size_t dim = 0);
 };

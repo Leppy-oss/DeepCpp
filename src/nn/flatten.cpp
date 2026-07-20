@@ -15,7 +15,7 @@ std::shared_ptr<Tensor> Flatten::forward(std::shared_ptr<Tensor> x)
 
     if (dim_ >= x->ndim())
     {
-        throw std::invalid_argument(
+        throw std::out_of_range(
             "Dim " + std::to_string(dim_) + " invalid for tensor with " + std::to_string(x->ndim()) + " dimensions"
         );
     }

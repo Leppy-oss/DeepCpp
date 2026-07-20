@@ -22,4 +22,4 @@ DataLoader::Iterator::Iterator(DataLoader *dataloader, std::size_t idx) : datalo
 
 void DataLoader::Iterator::operator++() { idx_ += dataloader_->batch_size(); }
 
-std::pair<std::shared_ptr<Tensor>, std::shared_ptr<Tensor>> DataLoader::Iterator::operator*() {}
+std::pair<std::shared_ptr<Tensor>, std::shared_ptr<Tensor>> DataLoader::Iterator::operator*() { return {}; }

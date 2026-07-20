@@ -581,7 +581,7 @@ std::shared_ptr<Tensor> bin_elementwise(
         };
     }
 
-    return std::make_shared<Tensor>(std::move(out_data), out_shape, requires_grad, gradfn, parents);
+    return std::make_shared<Tensor>(out_data, out_shape, requires_grad, gradfn, parents);
 }
 
 std::ostream &operator<<(std::ostream &os, const Tensor &obj)
@@ -921,4 +921,55 @@ std::shared_ptr<Tensor> Tensor::reshape(const tensor::Shape &shape)
     }
 
     return contiguous()->view(shape);
+}
+
+std::shared_ptr<Tensor> Tensor::stack(const std::vector<std::shared_ptr<Tensor>> &tensors, std::size_t dim)
+{
+    if (tensors.empty())
+    {
+        throw std::invalid_argument("Tensors cannot be empty");
+    }
+
+    auto shape = tensors[0]->shape();
+
+    if (dim > shape.size())
+    {
+        throw std::out_of_range(
+            "Dim " + std::to_string(dim) + " invalid for tensor with " + std::to_string(shape.size()) + " dimensions"
+        );
+    }
+
+    auto out_shape = shape;
+    out_shape.insert(out_shape.begin() + dim, tensors.size());
+
+    std::size_t out_numel = tensors[0]->numel() * tensors.size();
+
+    std::vector<float> out_data(out_numel);
+
+    std::size_t outer_numel = 1;
+    for (std::size_t i = 0; i < dim; i++)
+    {
+        outer_numel *= shape[i];
+    }
+
+    std::size_t inner_numel = 1;
+    for (std::size_t i = dim; i < shape.size(); i++)
+    {
+        inner_numel *= shape[i];
+    }
+
+    for (std::size_t outer_idx = 0; outer_idx < outer_numel; outer_idx++)
+    {
+        for (std::size_t in_idx = 0; in_idx < tensors.size(); in_idx++)
+        {
+            std::size_t in_offset = outer_idx * inner_numel;
+            std::size_t out_offset = (outer_idx * tensors.size() + in_idx) * inner_numel;
+            for (std::size_t inner_idx = 0; inner_idx < inner_numel; inner_idx++)
+            {
+                out_data[out_offset + inner_idx] = tensors[in_idx]->at(in_offset + inner_idx);
+            }
+        }
+    }
+
+    return std::make_shared<Tensor>(out_data, out_shape);
 }

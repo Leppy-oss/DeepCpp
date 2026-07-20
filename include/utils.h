@@ -23,6 +23,8 @@ namespace utils
         ostr << ")";
         return ostr.str();
     }
+
+    void imshow(std::shared_ptr<Tensor> img);
 }
 
 template <typename T> std::ostream &operator<<(std::ostream &os, const std::vector<T> &obj)
@@ -30,5 +32,3 @@ template <typename T> std::ostream &operator<<(std::ostream &os, const std::vect
     os << utils::to_string(obj);
     return os;
 }
-
-void imshow(std::shared_ptr<Tensor> img);

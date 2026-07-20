@@ -29,6 +29,8 @@ private:
 
 public:
     Module(std::string name);
+    virtual ~Module() = default;
+
     const std::string &name() const;
     std::string &name();
 

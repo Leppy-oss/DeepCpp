@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 
-void imshow(std::shared_ptr<Tensor> img)
+void utils::imshow(std::shared_ptr<Tensor> img)
 {
     for (std::size_t r = 0; r < img->shape()[0]; r++)
     {

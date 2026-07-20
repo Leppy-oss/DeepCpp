@@ -19,7 +19,7 @@ std::shared_ptr<Tensor> Cel::forward(std::shared_ptr<Tensor> y_hat, std::shared_
 
     if (dim_ >= y_hat->ndim())
     {
-        throw std::runtime_error(
+        throw std::out_of_range(
             "Dim " + std::to_string(dim_) + " invalid for tensor with " + std::to_string(y_hat->ndim()) + " dimensions"
         );
     }

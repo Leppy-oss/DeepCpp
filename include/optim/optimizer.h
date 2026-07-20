@@ -10,6 +10,7 @@ protected:
 
 public:
     Optimizer(std::vector<Parameter> params, float lr);
+    virtual ~Optimizer() = default;
     virtual void step();
     virtual void zero_grad();
 };
