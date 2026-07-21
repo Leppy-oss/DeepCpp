@@ -96,7 +96,7 @@ int main()
         model.load_state_dict(state_dict);
     }
 
-    std::size_t num_epochs = 1;
+    std::size_t num_epochs = 5;
     for (std::size_t epoch = 0; epoch < num_epochs; epoch++)
     {
         std::cout << "Training epoch " << epoch << " / " << num_epochs << "...\n";
