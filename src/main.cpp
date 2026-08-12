@@ -6,7 +6,6 @@
 #include "nn/linear.h"
 #include "nn/relu.h"
 #include "nn/sequential.h"
-#include "nn/softmax.h"
 #include "optim/adam.h"
 #include "tensor.h"
 #include <algorithm>
